@@ -8,6 +8,8 @@ from model_equality_testing.distribution import (
 )
 import tqdm
 import matplotlib.pyplot as plt
+from scipy.stats import ks_2samp
+from model_equality_testing.src.features import get_vader_scores
 
 
 def _plot_empirical_distribution(stats, ax=None, label="", **kwargs):
@@ -51,6 +53,20 @@ class EmpiricalPvalueCalculator:
 
         # compare to self.stats and average across the batch dimension (b)
         return np.mean((self.stats >= obs_stat), axis=0).item()
+
+
+class AnalyticalKSPvalueCalculator:
+    """
+    Analytical KS p‑value calculator that uses a reference score distribution.
+    """
+    def __init__(self, reference_scores):
+        self.reference_scores = reference_scores
+
+    def __call__(self, obs_sample, feature_fn=get_vader_scores):
+        obs_scores = feature_fn(obs_sample)
+        # Classical two‑sample KS test yields a p‑value directly
+        _, p_value = ks_2samp(self.reference_scores, obs_scores)
+        return p_value
 
 
 def one_sample_parametric_bootstrap_pvalue(

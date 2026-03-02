@@ -7,7 +7,6 @@ from model_equality_testing.utils import (
     Stopwatch,
     get_inv,
 )
-from model_equality_testing.src.features import get_vader_scores
 import torch
 from typing import Union, Tuple, List, Dict
 from model_equality_testing.distribution import (
@@ -399,51 +398,6 @@ def two_sample_ks(
     return ks_2samp(ranks1, ranks2).statistic
 
 
-def two_sample_ks_statistic(sample1, sample2, feature_fn=get_vader_scores):
-    """
-    Computes the K‑S statistic (D) between two sets of featured samples.
-    """
-    scores1 = feature_fn(sample1)
-    scores2 = feature_fn(sample2)
-    statistic, _ = ks_2samp(scores1, scores2)
-    return statistic
-
-
-def two_sample_vader_ks(
-    sample1: CompletionSample,
-    sample2: CompletionSample,
-):
-    """
-    Computes the two-sample Kolmogorov-Smirnov test statistic on VADER compound sentiment scores.
-    Assumes that the sequences in the samples are Unicode codepoints (not token IDs).
-    Requires the `vaderSentiment` package.
-    """
-    try:
-        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-    except ImportError:
-        raise ImportError("Please install vaderSentiment to use this test: pip install vaderSentiment")
-
-    analyzer = SentimentIntensityAnalyzer()
-
-    def get_scores(sample):
-        # Decode unicode integers back to string
-        # sample.completion_sample is (N, L)
-        scores = []
-        # Ensure tensor is on CPU and numpy for iteration
-        data = sample.completion_sample.cpu().numpy()
-        for row in data:
-            # Filter padding (-1) and convert to chars
-            # Note: This assumes input was tokenized with tokenize_unicode which uses -1 padding
-            text = "".join([chr(c) for c in row if c != -1])
-            scores.append(analyzer.polarity_scores(text)["compound"])
-        return scores
-
-    scores1 = get_scores(sample1)
-    scores2 = get_scores(sample2)
-
-    return ks_2samp(scores1, scores2).statistic
-
-
 #######################
 # Goodness of fit tests
 #######################
@@ -642,7 +596,6 @@ IMPLEMENTED_TESTS = {
     "two_sample_L1": two_sample_L1,
     "two_sample_L2": two_sample_L2,
     "two_sample_ks": two_sample_ks,
-    "two_sample_vader_ks": two_sample_vader_ks,
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,

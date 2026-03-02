@@ -7,7 +7,6 @@ from model_equality_testing.utils import (
     Stopwatch,
     get_inv,
 )
-from model_equality_testing.src.features import get_vader_scores
 import torch
 from typing import Union, Tuple, List, Dict
 from model_equality_testing.distribution import (
@@ -16,7 +15,6 @@ from model_equality_testing.distribution import (
 )
 from functools import lru_cache
 from collections import Counter
-from scipy.stats import ks_2samp
 
 #######################
 # Two sample tests
@@ -362,88 +360,6 @@ def two_sample_L2(
     return torch.sum(torch.square(c1 / sample1.N - c2 / sample2.N)).item()
 
 
-def two_sample_ks(
-    sample1: CompletionSample,
-    sample2: CompletionSample,
-):
-    """
-    Computes the two-sample Kolmogorov-Smirnov test statistic. 
-    Because the input data is sequences (categorical/high-dimensional), we 
-    impose a lexicographical ordering on the unique sequences observed in the 
-    combined sample to treat them as ordinal data.
-    
-    The test statistic is the maximum difference between the empirical cumulative 
-    distribution functions (ECDFs) of the lexicographical ranks of the sequences.
-    
-    Args:
-        sample1: CompletionSample
-        sample2: CompletionSample
-    Returns:
-        float: KS test statistic
-    """
-    # Concatenate sequences to find a common sorting/ranking
-    all_sequences = torch.cat([sample1.sequences, sample2.sequences], dim=0)
-    
-    # torch.unique with sorted=True (default) sorts the unique elements lexicographically
-    # return_inverse gives us the index (rank) of each sequence in the sorted unique list
-    _, inverse_indices = torch.unique(all_sequences, sorted=True, return_inverse=True, dim=0)
-    
-    # Split back into sample 1 and sample 2 ranks
-    # Move to CPU for scipy
-    ranks1 = inverse_indices[:sample1.N].float().cpu().numpy()
-    ranks2 = inverse_indices[sample1.N:].float().cpu().numpy()
-    
-    # We perform the K-S test on these ranks
-    # Note: ks_2samp calculates the max difference between ECDFs. 
-    # Even though data is discrete (ranks), the statistic D is well-defined.
-    return ks_2samp(ranks1, ranks2).statistic
-
-
-def two_sample_ks_statistic(sample1, sample2, feature_fn=get_vader_scores):
-    """
-    Computes the K‑S statistic (D) between two sets of featured samples.
-    """
-    scores1 = feature_fn(sample1)
-    scores2 = feature_fn(sample2)
-    statistic, _ = ks_2samp(scores1, scores2)
-    return statistic
-
-
-def two_sample_vader_ks(
-    sample1: CompletionSample,
-    sample2: CompletionSample,
-):
-    """
-    Computes the two-sample Kolmogorov-Smirnov test statistic on VADER compound sentiment scores.
-    Assumes that the sequences in the samples are Unicode codepoints (not token IDs).
-    Requires the `vaderSentiment` package.
-    """
-    try:
-        from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-    except ImportError:
-        raise ImportError("Please install vaderSentiment to use this test: pip install vaderSentiment")
-
-    analyzer = SentimentIntensityAnalyzer()
-
-    def get_scores(sample):
-        # Decode unicode integers back to string
-        # sample.completion_sample is (N, L)
-        scores = []
-        # Ensure tensor is on CPU and numpy for iteration
-        data = sample.completion_sample.cpu().numpy()
-        for row in data:
-            # Filter padding (-1) and convert to chars
-            # Note: This assumes input was tokenized with tokenize_unicode which uses -1 padding
-            text = "".join([chr(c) for c in row if c != -1])
-            scores.append(analyzer.polarity_scores(text)["compound"])
-        return scores
-
-    scores1 = get_scores(sample1)
-    scores2 = get_scores(sample2)
-
-    return ks_2samp(scores1, scores2).statistic
-
-
 #######################
 # Goodness of fit tests
 #######################
@@ -641,8 +557,6 @@ IMPLEMENTED_TESTS = {
     "two_sample_chi_squared": two_sample_chi_squared,
     "two_sample_L1": two_sample_L1,
     "two_sample_L2": two_sample_L2,
-    "two_sample_ks": two_sample_ks,
-    "two_sample_vader_ks": two_sample_vader_ks,
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,
