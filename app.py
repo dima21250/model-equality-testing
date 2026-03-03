@@ -79,7 +79,7 @@ if path_input:
     if not p.is_file():
         st.error(f"File not found: {p}")
     else:
-        @st.experimental_singleton
+        @st.cache_data
         def load_pickle(pickle_path: str):
             """Load the pickle and cache the resulting dictionary.
 
