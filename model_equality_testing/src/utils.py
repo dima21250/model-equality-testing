@@ -137,42 +137,35 @@ class Stopwatch:
 
 
 class MemoryWatch:
-    """Simple memory usage context manager.
-    It records the resident set size (RSS) before and after the block using
-    ``psutil`` if available, otherwise falls back to ``tracemalloc``.
-    After exiting, ``self.delta`` holds the change in megabytes.
+    """Simple memory usage context manager using ``tracemalloc``.
+    It records the memory allocation snapshot before and after the block and
+    computes the difference in megabytes. ``tracemalloc`` is part of the Python
+    standard library, so no external dependencies are required.
+    After exiting, ``self.delta`` holds the change in megabytes (0.0 if no
+    change could be measured).
     """
 
     def __init__(self):
         self.delta = None
-        self._use_psutil = False
-        try:
-            import psutil
-            self._process = psutil.Process()
-            self._use_psutil = True
-        except Exception:
-            self._use_psutil = False
+        # No external libraries – always use tracemalloc
+        self._snapshot_start = None
 
     def __enter__(self):
-        if self._use_psutil:
-            self._start = self._process.memory_info().rss
-        else:
-            import tracemalloc
-            tracemalloc.start()
-            self._snapshot_start = tracemalloc.take_snapshot()
+        import tracemalloc
+        tracemalloc.start()
+        self._snapshot_start = tracemalloc.take_snapshot()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._use_psutil:
-            end = self._process.memory_info().rss
-            self.delta = (end - self._start) / (1024 * 1024)  # MB
-        else:
-            import tracemalloc
-            snapshot_end = tracemalloc.take_snapshot()
-            stats = snapshot_end.compare_to(self._snapshot_start, 'lineno')
-            # Total size difference in bytes
-            self.delta = sum(stat.size_diff for stat in stats) / (1024 * 1024)
-            tracemalloc.stop()
+        import tracemalloc
+        snapshot_end = tracemalloc.take_snapshot()
+        stats = snapshot_end.compare_to(self._snapshot_start, 'lineno')
+        # Total size difference in bytes, converted to megabytes
+        self.delta = sum(stat.size_diff for stat in stats) / (1024 * 1024)
+        # Ensure delta is numeric; if for any reason it's still None, set to 0.0
+        if self.delta is None:
+            self.delta = 0.0
+        tracemalloc.stop()
 
     """
     Context manager for timing a block of code
