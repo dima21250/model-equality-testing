@@ -102,7 +102,15 @@ if path_input:
                 # Show number of samples per model (useful for two‑sample tests)
                 sample_counts = {model: data['samples'][model].N for model in data['samples']}
                 st.write("Sample counts per model:")
-                st.table(sample_counts)
+                # Display as a two‑column table for clearer formatting
+                try:
+                    import pandas as pd
+                    df_counts = pd.DataFrame.from_dict(sample_counts, orient="index", columns=["Count"])
+                    df_counts.index.name = "Model"
+                    st.table(df_counts)
+                except Exception:
+                    # Fallback: simple key‑value display if pandas is unavailable
+                    st.write(sample_counts)
         except Exception as e:
             st.error(f"Failed to load pickle: {e}")
 else:
