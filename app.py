@@ -94,14 +94,25 @@ if path_input:
             if not isinstance(data, dict) or "samples" not in data:
                 st.error("Invalid pickle format – expected a dict with a 'samples' key.")
             else:
-                st.session_state["loaded_data"] = data
+                # Preserve original data for reference
+                original_data = data
+                # Determine maximum k based on the smallest model sample count
+                min_samples = min(sample_counts.values()) if sample_counts else 0
+                max_k = min_samples // 11 if min_samples >= 11 else 1
+                # Slider for k (subsample multiplier)
+                k = st.slider("Subsample multiplier (k)", min_value=1, max_value=max_k, value=1)
+                # Create subsampled data using the new utility
+                from model_equality_testing.corpus_sampling import sample_corpus
+                subsampled = sample_corpus(models=list(original_data["samples"].keys()), data=original_data, k=k)
+                # Build new data dict preserving prompt_map
+                st.session_state["loaded_data"] = {"samples": subsampled, "prompt_map": original_data.get("prompt_map", {})}
                 st.success("Data loaded successfully!")
                 # Update .env with the loaded path
                 update_env_var("LAST_PICKLE_PATH", str(p))
                 st.write(f"Available models: {list(data['samples'].keys())}")
                 # Show number of samples per model (useful for two‑sample tests)
                 sample_counts = {model: data['samples'][model].N for model in data['samples']}
-                st.write("Total sample counts per model:")
+                st.write("Total sample counts available per model:")
                 # Display as a two‑column table for clearer formatting
                 try:
                     import pandas as pd
