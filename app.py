@@ -96,8 +96,8 @@ if path_input:
             else:
                 st.session_state["loaded_data"] = data
                 st.success("Data loaded successfully!")
-        # Update .env with the loaded path
-        update_env_var("LAST_PICKLE_PATH", str(p))
+                # Update .env with the loaded path
+                update_env_var("LAST_PICKLE_PATH", str(p))
                 st.write(f"Available models: {list(data['samples'].keys())}")
         except Exception as e:
             st.error(f"Failed to load pickle: {e}")
