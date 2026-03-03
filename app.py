@@ -117,10 +117,22 @@ if path_input:
                 subsampled = sample_corpus(models=list(original_data["samples"].keys()), data=original_data, k=k)
                 # Build new data dict preserving prompt_map
                 st.session_state["loaded_data"] = {"samples": subsampled, "prompt_map": original_data.get("prompt_map", {})}
+                # Compute subsample counts for display
+                subsample_counts = {model: subsampled[model].N for model in subsampled}
+                # Combine original and subsample counts into a DataFrame
+                try:
+                    import pandas as pd
+                    df_counts = pd.DataFrame({
+                        "Total": sample_counts,
+                        "Subsample": subsample_counts
+                    })
+                    df_counts.index.name = "Model"
+                    st.table(df_counts)
+                except Exception:
+                    st.write({"Total": sample_counts, "Subsample": subsample_counts})
                 st.success("Data loaded successfully!")
                 # Update .env with the loaded path
                 update_env_var("LAST_PICKLE_PATH", str(p))
-                st.write(f"Available models: {list(data['samples'].keys())}")
         except Exception as e:
             st.error(f"Failed to load pickle: {e}")
 else:
