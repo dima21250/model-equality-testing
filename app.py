@@ -101,7 +101,7 @@ if path_input:
                 st.write(f"Available models: {list(data['samples'].keys())}")
                 # Show number of samples per model (useful for two‑sample tests)
                 sample_counts = {model: data['samples'][model].N for model in data['samples']}
-                st.write("Sample counts per model:")
+                st.write("Total sample counts per model:")
                 # Display as a two‑column table for clearer formatting
                 try:
                     import pandas as pd
