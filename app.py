@@ -100,7 +100,7 @@ if path_input:
                 update_env_var("LAST_PICKLE_PATH", str(p))
                 st.write(f"Available models: {list(data['samples'].keys())}")
                 # Show number of samples per model (useful for two‑sample tests)
-                sample_counts = {model: len(data['samples'][model]) for model in data['samples']}
+                sample_counts = {model: data['samples'][model].N for model in data['samples']}
                 st.write("Sample counts per model:")
                 st.table(sample_counts)
         except Exception as e:
