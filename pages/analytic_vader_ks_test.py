@@ -30,7 +30,7 @@ with col2:
 if st.button("Run Test"):
     st.info(f"Running VADER‑KS test: **{model_a}** vs **{model_b}**")
     # ---- Timing & memory block ----
-    with Stopwatch() as sw, MemoryWatch() as mem:
+    with Stopwatch() as sw:
         # Compute reference VADER scores for model A
         analyzer = SentimentIntensityAnalyzer()
         def _vader_scores(sample):
@@ -58,7 +58,7 @@ if st.button("Run Test"):
     st.metric(label="VADER‑KS statistic (D)", value=f"{test_stat:.5f}")
     st.metric(label="Analytic p‑value", value=f"{pvalue:.5f}")
     st.metric(label="Wall‑clock time (s)", value=f"{sw.time:.2f}")
-    st.metric(label="Memory delta (MiB)", value=(f"{mem.delta:.2f}" if mem.delta is not None else "N/A"))
+  
 
     if pvalue < 0.05:
         st.error("Result: REJECT null hypothesis – the two models differ in sentiment distribution.")

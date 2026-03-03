@@ -96,6 +96,17 @@ if path_input:
             else:
                 # Preserve original data for reference
                 original_data = data
+                # Compute sample counts per model
+                sample_counts = {model: data['samples'][model].N for model in data['samples']}
+                st.write("Total sample counts available per model:")
+                # Display as a two‑column table for clearer formatting
+                try:
+                    import pandas as pd
+                    df_counts = pd.DataFrame.from_dict(sample_counts, orient="index", columns=["Count"])
+                    df_counts.index.name = "Model"
+                    st.table(df_counts)
+                except Exception:
+                    st.write(sample_counts)
                 # Determine maximum k based on the smallest model sample count
                 min_samples = min(sample_counts.values()) if sample_counts else 0
                 max_k = min_samples // 11 if min_samples >= 11 else 1
@@ -110,18 +121,6 @@ if path_input:
                 # Update .env with the loaded path
                 update_env_var("LAST_PICKLE_PATH", str(p))
                 st.write(f"Available models: {list(data['samples'].keys())}")
-                # Show number of samples per model (useful for two‑sample tests)
-                sample_counts = {model: data['samples'][model].N for model in data['samples']}
-                st.write("Total sample counts available per model:")
-                # Display as a two‑column table for clearer formatting
-                try:
-                    import pandas as pd
-                    df_counts = pd.DataFrame.from_dict(sample_counts, orient="index", columns=["Count"])
-                    df_counts.index.name = "Model"
-                    st.table(df_counts)
-                except Exception:
-                    # Fallback: simple key‑value display if pandas is unavailable
-                    st.write(sample_counts)
         except Exception as e:
             st.error(f"Failed to load pickle: {e}")
 else:
