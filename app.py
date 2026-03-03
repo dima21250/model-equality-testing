@@ -98,15 +98,7 @@ if path_input:
                 original_data = data
                 # Compute sample counts per model
                 sample_counts = {model: data['samples'][model].N for model in data['samples']}
-                st.write("Total sample counts available per model:")
-                # Display as a two‑column table for clearer formatting
-                try:
-                    import pandas as pd
-                    df_counts = pd.DataFrame.from_dict(sample_counts, orient="index", columns=["Count"])
-                    df_counts.index.name = "Model"
-                    st.table(df_counts)
-                except Exception:
-                    st.write(sample_counts)
+                # The detailed table (Total & Subsample) will be displayed after subsampling
                 # Determine maximum k based on the smallest model sample count
                 min_samples = min(sample_counts.values()) if sample_counts else 0
                 max_k = min_samples // 11 if min_samples >= 11 else 1
