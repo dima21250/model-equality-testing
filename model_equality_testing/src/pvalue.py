@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from typing import Union, Tuple, List, Dict
-from model_equality_testing.tests import IMPLEMENTED_TESTS
+from .registry import IMPLEMENTED_TESTS  # Import test registry
 from model_equality_testing.distribution import (
     CompletionSample,
     DistributionFromDataset,
