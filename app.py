@@ -115,8 +115,8 @@ if path_input:
                 try:
                     import pandas as pd
                     df_counts = pd.DataFrame({
-                        "Total": sample_counts,
-                        "Subsample": subsample_counts
+                        "Total Available": sample_counts,
+                        "Sample Size": subsample_counts
                     })
                     df_counts.index.name = "Model"
                     st.table(df_counts)
