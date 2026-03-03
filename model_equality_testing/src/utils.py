@@ -184,21 +184,21 @@ class MemoryWatch:
         self.time = perf_counter() - self.time
 
 
-    def ndim(p):
-        """Return the dimensionality of a tensor or nested list/array.
+def ndim(p):
+    """Return the dimensionality of a tensor or nested list/array.
 
-        - If ``p`` is a ``torch.Tensor``, returns ``p.ndim``.
-        - If ``p`` is a list/ndarray, recursively determines the depth.
-        - For non‑iterable objects returns ``0``.
-        """
-        if isinstance(p, torch.Tensor):
-            return p.ndim
-        if not isinstance(p, (list, np.ndarray)):
-            return 0
-        elif len(p) > 0:
-            return ndim(p[0]) + 1
-        else:
-            return 1
+    - If ``p`` is a ``torch.Tensor``, returns ``p.ndim``.
+    - If ``p`` is a list/ndarray, recursively determines the depth.
+    - For non‑iterable objects returns ``0``.
+    """
+    if isinstance(p, torch.Tensor):
+        return p.ndim
+    if not isinstance(p, (list, np.ndarray)):
+        return 0
+    elif len(p) > 0:
+        return ndim(p[0]) + 1
+    else:
+        return 1
 
 
 @lru_cache(maxsize=100)
