@@ -58,7 +58,7 @@ if st.button("Run Test"):
     st.metric(label="VADER‑KS statistic (D)", value=f"{test_stat:.5f}")
     st.metric(label="Analytic p‑value", value=f"{pvalue:.5f}")
     st.metric(label="Wall‑clock time (s)", value=f"{sw.time:.2f}")
-    st.metric(label="Memory delta (MiB)", value=f"{mem.delta:.2f}")
+    st.metric(label="Memory delta (MiB)", value=(f"{mem.delta:.2f}" if mem.delta is not None else "N/A"))
 
     if pvalue < 0.05:
         st.error("Result: REJECT null hypothesis – the two models differ in sentiment distribution.")
