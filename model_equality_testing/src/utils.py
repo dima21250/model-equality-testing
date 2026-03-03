@@ -136,6 +136,61 @@ class Stopwatch:
         self.time = perf_counter() - self.time
 
 
+class MemoryWatch:
+    """Simple memory usage context manager.
+    It records the resident set size (RSS) before and after the block using
+    ``psutil`` if available, otherwise falls back to ``tracemalloc``.
+    After exiting, ``self.delta`` holds the change in megabytes.
+    """
+
+    def __init__(self):
+        self.delta = None
+        self._use_psutil = False
+        try:
+            import psutil
+            self._process = psutil.Process()
+            self._use_psutil = True
+        except Exception:
+            self._use_psutil = False
+
+    def __enter__(self):
+        if self._use_psutil:
+            self._start = self._process.memory_info().rss
+        else:
+            import tracemalloc
+            tracemalloc.start()
+            self._snapshot_start = tracemalloc.take_snapshot()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._use_psutil:
+            end = self._process.memory_info().rss
+            self.delta = (end - self._start) / (1024 * 1024)  # MB
+        else:
+            import tracemalloc
+            snapshot_end = tracemalloc.take_snapshot()
+            stats = snapshot_end.compare_to(self._snapshot_start, 'lineno')
+            # Total size difference in bytes
+            self.delta = sum(stat.size_diff for stat in stats) / (1024 * 1024)
+            tracemalloc.stop()
+
+    """
+    Context manager for timing a block of code
+    Source: https://stackoverflow.com/questions/33987060/python-context-manager-that-measures-time
+    """
+
+    def __enter__(self):
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        self.time = perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        self.time = perf_counter() - self.time
+
+
 def ndim(p):
     """
     Args:
