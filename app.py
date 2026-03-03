@@ -103,7 +103,7 @@ if path_input:
                 min_samples = min(sample_counts.values()) if sample_counts else 0
                 max_k = min_samples // 11 if min_samples >= 11 else 1
                 # Slider for k (subsample multiplier)
-                k = st.slider("Subsample multiplier (k)", min_value=1, max_value=max_k, value=1)
+                k = st.slider("Sample size multiplier (k)", min_value=1, max_value=max_k, value=1)
                 # Create subsampled data using the new utility
                 from model_equality_testing.corpus_sampling import sample_corpus
                 subsampled = sample_corpus(models=list(original_data["samples"].keys()), data=original_data, k=k)
