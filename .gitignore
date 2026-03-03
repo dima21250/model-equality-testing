@@ -19,3 +19,4 @@ power_*.json
 *.o
 finetuned_models/
 data/
+.env
