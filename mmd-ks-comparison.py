@@ -102,18 +102,18 @@ def compute_ks(sample1, sample2):
 
 
 def run_pair(
-    model: str,
+    model_a: str,
+    model_b: str,
     prompt_ids: Dict[str, List[int]],
     L: int,
-    source_a: str,
-    source_b: str,
+    source: str,
     n_samples: int,
     label: str,
     root_dir: str = "./data",
 ):
-    print(f"{label} (source: {source_a} vs {source_b}):")
-    samp_a = sample_distribution(model, prompt_ids, L, source_a, n_samples, root_dir=root_dir)
-    samp_b = sample_distribution(model, prompt_ids, L, source_b, n_samples, root_dir=root_dir)
+    print(f"{label} (model A: {model_a} vs model B: {model_b}, source: {source}):")
+    samp_a = sample_distribution(model_a, prompt_ids, L, source, n_samples, root_dir=root_dir)
+    samp_b = sample_distribution(model_b, prompt_ids, L, source, n_samples, root_dir=root_dir)
 
     mmd_stat, mmd_p = compute_mmd(samp_a, samp_b)
     ks_stat, ks_p = compute_ks(samp_a, samp_b)
@@ -123,13 +123,13 @@ def run_pair(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compare MMD and KS tests on two model output distributions.")
-    parser.add_argument("--model", default="meta-llama/Meta-Llama-3-8B-Instruct", help="Model name for the tokenizer.")
+    parser = argparse.ArgumentParser(description="Compare two LLMs on the same dataset using MMD and VADER‑based KS tests.")
+    parser.add_argument("--model_a", default="meta-llama/Meta-Llama-3-8B-Instruct", help="First model name for the comparison.")
+    parser.add_argument("--model_b", default="mistralai/Mistral-7B-Instruct-v0.3", help="Second model name for the comparison.")
     parser.add_argument("--prompts", nargs="+", default=["0", "1", "2"], help="Space‑separated list of prompt IDs (as strings).")
     parser.add_argument("--L", type=int, default=200, help="Maximum completion length (truncation).")
-    parser.add_argument("--samples", type=int, default=500, help="Number of completions to draw per distribution.")
-    parser.add_argument("--source_eq", default="fp32", help="Source for the equivalence pair (both sides).")
-    parser.add_argument("--source_diff", default="int8", help="Source for the differing pair (second side).")
+    parser.add_argument("--samples", type=int, default=500, help="Number of completions to draw per model.")
+    parser.add_argument("--source", default="fp32", help="Source identifier (e.g., fp32, int8, ...) to use for both models.")
     parser.add_argument("--root_dir", default="./data", help="Directory where the dataset was extracted.")
     parser.add_argument("--dataset", default="wikipedia_en", help="Dataset name present in the data folder (e.g., wikipedia_en).")
     args = parser.parse_args()
@@ -137,27 +137,15 @@ def main():
     # Build prompt mapping – use the user‑provided dataset name.
     prompt_ids = {args.dataset: [int(pid) for pid in args.prompts]}
 
-    # Equivalence sanity check (same source).
+    # Single comparison between the two models on the same source.
     run_pair(
-        model=args.model,
+        model_a=args.model_a,
+        model_b=args.model_b,
         prompt_ids=prompt_ids,
         L=args.L,
-        source_a=args.source_eq,
-        source_b=args.source_eq,
+        source=args.source,
         n_samples=args.samples,
-        label="Equivalence check",
-        root_dir=args.root_dir,
-    )
-
-    # Difference check (different sources).
-    run_pair(
-        model=args.model,
-        prompt_ids=prompt_ids,
-        L=args.L,
-        source_a=args.source_eq,
-        source_b=args.source_diff,
-        n_samples=args.samples,
-        label="Difference check",
+        label="Model comparison",
         root_dir=args.root_dir,
     )
 
