@@ -125,8 +125,8 @@ def run_pair(
     mmd_stat, mmd_p, mmd_time = compute_mmd(samp_a, samp_b)
     ks_stat, ks_p, ks_time = compute_ks(samp_a, samp_b)
 
-    print(f"  MMD statistic = {mmd_stat:.6f}, p‑value = {mmd_p:.4f}")
-    print(f"  KS  statistic = {ks_stat:.6f}, p‑value = {ks_p:.4f}\n")
+    print(f"  MMD statistic = {mmd_stat:.6f}, p‑value = {mmd_p:.4f}, elapsed = {mmd_time:.3f}s")
+    print(f"  KS  statistic = {ks_stat:.6f}, p‑value = {ks_p:.4f}, elapsed = {ks_time:.3f}s\n")
 
 
 def main():
