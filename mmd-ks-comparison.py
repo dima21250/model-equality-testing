@@ -61,24 +61,30 @@ def sample_distribution(
 
 
 def compute_mmd(sample1, sample2):
-    """MMD statistic (hamming kernel) and permutation p‑value."""
-    stat = mmd_hamming(sample1, sample2)
-    pvalue, _ = run_two_sample_test(
-        sample1,
-        sample2,
-        stat_type="mmd_hamming",
-        pvalue_type="permutation_pvalue",
-    )
-    return stat, pvalue
+    """MMD statistic (hamming kernel) and permutation p‑value, with timing.
+
+    Returns a tuple ``(stat, pvalue, elapsed)`` where ``elapsed`` is the total
+    wall‑clock time (seconds) spent computing the statistic and the p‑value.
+    """
+    from model_equality_testing.utils import Stopwatch
+    with Stopwatch() as sw:
+        stat = mmd_hamming(sample1, sample2)
+        pvalue, _ = run_two_sample_test(
+            sample1,
+            sample2,
+            stat_type="mmd_hamming",
+            pvalue_type="permutation_pvalue",
+        )
+    return stat, pvalue, sw.time
 
 
 def compute_ks(sample1, sample2):
-    """Two‑sample KS statistic using VADER sentiment scores.
+    """Two‑sample KS statistic using VADER sentiment scores, with timing.
 
-    This mirrors ``tests.two_sample_vader_ks`` for the statistic, but also
-    returns the analytical p‑value obtained from ``scipy.stats.ks_2samp`` on the
-    sentiment scores.
+    Returns ``(statistic, pvalue, elapsed)`` where ``elapsed`` includes the
+    feature extraction (sentiment scoring) and the call to ``ks_2samp``.
     """
+    from model_equality_testing.utils import Stopwatch
     try:
         from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
     except ImportError as e:
@@ -95,10 +101,11 @@ def compute_ks(sample1, sample2):
             scores.append(analyzer.polarity_scores(text)["compound"])
         return scores
 
-    scores1 = get_scores(sample1)
-    scores2 = get_scores(sample2)
-    ks_res = ks_2samp(scores1, scores2)
-    return ks_res.statistic, ks_res.pvalue
+    with Stopwatch() as sw:
+        scores1 = get_scores(sample1)
+        scores2 = get_scores(sample2)
+        ks_res = ks_2samp(scores1, scores2)
+    return ks_res.statistic, ks_res.pvalue, sw.time
 
 
 def run_pair(
@@ -115,8 +122,8 @@ def run_pair(
     samp_a = sample_distribution(model_a, prompt_ids, L, source, n_samples, root_dir=root_dir)
     samp_b = sample_distribution(model_b, prompt_ids, L, source, n_samples, root_dir=root_dir)
 
-    mmd_stat, mmd_p = compute_mmd(samp_a, samp_b)
-    ks_stat, ks_p = compute_ks(samp_a, samp_b)
+    mmd_stat, mmd_p, mmd_time = compute_mmd(samp_a, samp_b)
+    ks_stat, ks_p, ks_time = compute_ks(samp_a, samp_b)
 
     print(f"  MMD statistic = {mmd_stat:.6f}, p‑value = {mmd_p:.4f}")
     print(f"  KS  statistic = {ks_stat:.6f}, p‑value = {ks_p:.4f}\n")
