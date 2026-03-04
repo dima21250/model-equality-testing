@@ -31,6 +31,7 @@ def sample_distribution(
     L: int,
     source: str,
     n_samples: int,
+    root_dir: str = "./data",
 ) -> "CompletionSample":
     """Load a distribution and draw ``n_samples`` completions.
 
@@ -46,12 +47,15 @@ def sample_distribution(
         One of the supported ``SOURCES`` (e.g. ``fp32`` or ``int8``).
     n_samples: int
         Number of completions to draw.
+    root_dir: str
+        Directory where the dataset was extracted (default ``./data``).
     """
     dist = load_distribution(
         model=model,
         prompt_ids=prompt_ids,
         L=L,
         source=source,
+        root_dir=root_dir,
     )
     return dist.sample(n=n_samples)
 
@@ -105,10 +109,11 @@ def run_pair(
     source_b: str,
     n_samples: int,
     label: str,
+    root_dir: str = "./data",
 ):
     print(f"{label} (source: {source_a} vs {source_b}):")
-    samp_a = sample_distribution(model, prompt_ids, L, source_a, n_samples)
-    samp_b = sample_distribution(model, prompt_ids, L, source_b, n_samples)
+    samp_a = sample_distribution(model, prompt_ids, L, source_a, n_samples, root_dir=root_dir)
+    samp_b = sample_distribution(model, prompt_ids, L, source_b, n_samples, root_dir=root_dir)
 
     mmd_stat, mmd_p = compute_mmd(samp_a, samp_b)
     ks_stat, ks_p = compute_ks(samp_a, samp_b)
@@ -125,10 +130,12 @@ def main():
     parser.add_argument("--samples", type=int, default=500, help="Number of completions to draw per distribution.")
     parser.add_argument("--source_eq", default="fp32", help="Source for the equivalence pair (both sides).")
     parser.add_argument("--source_diff", default="int8", help="Source for the differing pair (second side).")
+    parser.add_argument("--root_dir", default="./data", help="Directory where the dataset was extracted.")
+    parser.add_argument("--dataset", default="wikipedia_en", help="Dataset name present in the data folder (e.g., wikipedia_en).")
     args = parser.parse_args()
 
-    # Build prompt mapping – use a single synthetic dataset name for simplicity.
-    prompt_ids = {"synthetic": [int(pid) for pid in args.prompts]}
+    # Build prompt mapping – use the user‑provided dataset name.
+    prompt_ids = {args.dataset: [int(pid) for pid in args.prompts]}
 
     # Equivalence sanity check (same source).
     run_pair(
@@ -139,6 +146,7 @@ def main():
         source_b=args.source_eq,
         n_samples=args.samples,
         label="Equivalence check",
+        root_dir=args.root_dir,
     )
 
     # Difference check (different sources).
@@ -150,6 +158,7 @@ def main():
         source_b=args.source_diff,
         n_samples=args.samples,
         label="Difference check",
+        root_dir=args.root_dir,
     )
 
 
