@@ -113,14 +113,15 @@ def run_pair(
     model_b: str,
     prompt_ids: Dict[str, List[int]],
     L: int,
-    source: str,
+    source_a: str,
+    source_b: str,
     n_samples: int,
     label: str,
     root_dir: str = "./data",
 ):
-    print(f"{label} (model A: {model_a} vs model B: {model_b}, source: {source}):")
-    samp_a = sample_distribution(model_a, prompt_ids, L, source, n_samples, root_dir=root_dir)
-    samp_b = sample_distribution(model_b, prompt_ids, L, source, n_samples, root_dir=root_dir)
+    print(f"{label} (model A: {model_a} [{source_a}] vs model B: {model_b} [{source_b}]):")
+    samp_a = sample_distribution(model_a, prompt_ids, L, source_a, n_samples, root_dir=root_dir)
+    samp_b = sample_distribution(model_b, prompt_ids, L, source_b, n_samples, root_dir=root_dir)
 
     mmd_stat, mmd_p, mmd_time = compute_mmd(samp_a, samp_b)
     ks_stat, ks_p, ks_time = compute_ks(samp_a, samp_b)
@@ -136,7 +137,8 @@ def main():
     parser.add_argument("--prompts", nargs="+", default=["0", "1", "2"], help="Space‑separated list of prompt IDs (as strings).")
     parser.add_argument("--L", type=int, default=200, help="Maximum completion length (truncation).")
     parser.add_argument("--samples", type=int, default=500, help="Number of completions to draw per model.")
-    parser.add_argument("--source", default="fp32", help="Source identifier (e.g., fp32, int8, ...) to use for both models.")
+    parser.add_argument("--source_a", default="fp32", help="Source identifier for model A (e.g., fp32, int8, ...).")
+    parser.add_argument("--source_b", default="fp32", help="Source identifier for model B (e.g., fp32, int8, ...).")
     parser.add_argument("--root_dir", default="./data", help="Directory where the dataset was extracted.")
     parser.add_argument("--dataset", default="wikipedia_en", help="Dataset name present in the data folder (e.g., wikipedia_en).")
     args = parser.parse_args()
@@ -144,13 +146,14 @@ def main():
     # Build prompt mapping – use the user‑provided dataset name.
     prompt_ids = {args.dataset: [int(pid) for pid in args.prompts]}
 
-    # Single comparison between the two models on the same source.
+    # Single comparison between the two models (optionally with different sources).
     run_pair(
         model_a=args.model_a,
         model_b=args.model_b,
         prompt_ids=prompt_ids,
         L=args.L,
-        source=args.source,
+        source_a=args.source_a,
+        source_b=args.source_b,
         n_samples=args.samples,
         label="Model comparison",
         root_dir=args.root_dir,

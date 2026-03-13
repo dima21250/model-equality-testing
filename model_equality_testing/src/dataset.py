@@ -109,7 +109,7 @@ def load_distribution(
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    if source in ["fp32", "fp16", "nf4", "int8"]:
+    if source in ["fp32", "fp16", "nf4", "int8", "watermark"]:
         if load_in_unicode:
             load_fn = lambda x: _load_local_samples_unicode(x, tokenizer)
         else:
