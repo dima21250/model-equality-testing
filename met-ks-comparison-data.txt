@@ -1,0 +1,19 @@
+wikipedia_en
+Model comparison (model A: meta-llama/Meta-Llama-3-8B-Instruct vs model B: mistralai/Mistral-7B-Instruct-v0.3, source: fp32):
+MMD statistic = 0.100790, p‑value = 0.0000, elapsed = 127.179s
+KS  statistic = 0.358000, p‑value = 0.0000, elapsed =   0.060s
+
+ultrachat
+Model comparison (model A: meta-llama/Meta-Llama-3-8B-Instruct vs model B: mistralai/Mistral-7B-Instruct-v0.3, source: fp32):
+MMD statistic = 0.204839, p‑value = 0.0000, elapsed = 127.773s
+KS  statistic = 0.162000, p‑value = 0.0000, elapsed =   0.055s
+
+wikipedia_en
+Model comparison (model A: meta-llama/Meta-Llama-3-8B-Instruct vs model B: meta-llama/Meta-Llama-3-8B-Instruct, source: fp32):
+MMD statistic = -0.000057, p‑value = 0.4760, elapsed = 127.658s
+KS  statistic =  0.064000, p‑value = 0.2576, elapsed =   0.057s
+
+humaneval
+Model comparison (model A: meta-llama/Meta-Llama-3-8B-Instruct vs model B: mistralai/Mistral-7B-Instruct-v0.3, source: fp32):
+MMD statistic = 0.252752, p‑value = 0.0000, elapsed = 127.194s
+KS  statistic = 0.178000, p‑value = 0.0000, elapsed =   0.046s
