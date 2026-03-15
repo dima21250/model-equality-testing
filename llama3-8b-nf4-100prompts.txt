@@ -1,0 +1,1175 @@
+Testing prompts 0-99 individually for wikipedia_en
+Source A: fp32, Source B: nf4
+
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [0]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1144932499992137
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [0]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3557808749974356
+Done initializing
+Prompt  0: KS=0.0460, p=0.6659, mean_a=+0.512±0.170, mean_b=+0.499±0.193, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [1]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9922801659995457
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [1]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.32189458400171134
+Done initializing
+Prompt  1: KS=0.0480, p=0.6126, mean_a=+0.311±0.293, mean_b=+0.321±0.298, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [2]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1594711249999818
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [2]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3694095000028028
+Done initializing
+Prompt  2: KS=0.0880, p=0.0416, mean_a=+0.484±0.270, mean_b=+0.449±0.288, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [3]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0608102080004755
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [3]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3800611669976206
+Done initializing
+Prompt  3: KS=0.0420, p=0.7704, mean_a=+0.349±0.302, mean_b=+0.335±0.306, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [4]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9560887910010933
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [4]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34773983400009456
+Done initializing
+Prompt  4: KS=0.0600, p=0.3294, mean_a=+0.210±0.253, mean_b=+0.221±0.277, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [5]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.062172041998565
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [5]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3789319159986917
+Done initializing
+Prompt  5: KS=0.1280, p=0.0005, mean_a=+0.308±0.307, mean_b=+0.256±0.330, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [6]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.074251624999306
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [6]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3440478339980473
+Done initializing
+Prompt  6: KS=0.0880, p=0.0416, mean_a=+0.454±0.250, mean_b=+0.428±0.264, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [7]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1629037499988044
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [7]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3656996660029108
+Done initializing
+Prompt  7: KS=0.0520, p=0.5089, mean_a=+0.557±0.297, mean_b=+0.572±0.300, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [8]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1024186249997001
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [8]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.35524687499855645
+Done initializing
+Prompt  8: KS=0.0660, p=0.2263, mean_a=+0.498±0.281, mean_b=+0.472±0.283, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [9]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0752704160004214
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [9]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.35121158300171373
+Done initializing
+Prompt  9: KS=0.0520, p=0.5089, mean_a=+0.466±0.246, mean_b=+0.461±0.243, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [10]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.078674290998606
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [10]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3518244170008984
+Done initializing
+Prompt 10: KS=0.0540, p=0.4599, mean_a=+0.620±0.278, mean_b=+0.620±0.273, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [11]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.020897000002151
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [11]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3390192089973425
+Done initializing
+Prompt 11: KS=0.0740, p=0.1294, mean_a=+0.138±0.310, mean_b=+0.158±0.361, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [12]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0087604580003244
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [12]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3388178749992221
+Done initializing
+Prompt 12: KS=0.0500, p=0.5600, mean_a=+0.392±0.414, mean_b=+0.395±0.450, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [13]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0936678329999268
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [13]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3536424590020033
+Done initializing
+Prompt 13: KS=0.0600, p=0.3294, mean_a=+0.173±0.471, mean_b=+0.152±0.446, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [14]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0543269580011838
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [14]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3389942499998142
+Done initializing
+Prompt 14: KS=0.0440, p=0.7189, mean_a=-0.078±0.484, mean_b=-0.056±0.500, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [15]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0744427499994345
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [15]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3356857500002661
+Done initializing
+Prompt 15: KS=0.0460, p=0.6659, mean_a=+0.054±0.387, mean_b=+0.074±0.377, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [16]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0399452920028125
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [16]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.33253170900206896
+Done initializing
+Prompt 16: KS=0.0720, p=0.1497, mean_a=+0.216±0.309, mean_b=+0.251±0.305, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [17]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0505420000008598
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [17]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3331422079972981
+Done initializing
+Prompt 17: KS=0.0720, p=0.1497, mean_a=+0.403±0.350, mean_b=+0.357±0.366, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [18]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.059081374998641
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [18]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.38008999999874504
+Done initializing
+Prompt 18: KS=0.0540, p=0.4599, mean_a=+0.349±0.330, mean_b=+0.336±0.309, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [19]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0485696249998
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [19]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3752811250014929
+Done initializing
+Prompt 19: KS=0.0540, p=0.4599, mean_a=+0.439±0.311, mean_b=+0.443±0.327, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [20]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0348366670004907
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [20]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3693570830000681
+Done initializing
+Prompt 20: KS=0.0780, p=0.0955, mean_a=+0.422±0.323, mean_b=+0.376±0.327, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [21]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.988663500000257
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [21]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3151892919995589
+Done initializing
+Prompt 21: KS=0.0520, p=0.5089, mean_a=+0.268±0.317, mean_b=+0.255±0.364, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [22]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0054191249982978
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [22]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.32894204200056265
+Done initializing
+Prompt 22: KS=0.0640, p=0.2576, mean_a=+0.276±0.365, mean_b=+0.321±0.343, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [23]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9972844999974768
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [23]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3294975839999097
+Done initializing
+Prompt 23: KS=0.1220, p=0.0012, mean_a=+0.238±0.391, mean_b=+0.321±0.377, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [24]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0155994169981568
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [24]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.33486208399699535
+Done initializing
+Prompt 24: KS=0.0500, p=0.5600, mean_a=+0.215±0.391, mean_b=+0.251±0.371, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [25]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.113212125001155
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [25]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3745279169997957
+Done initializing
+Prompt 25: KS=0.0860, p=0.0495, mean_a=+0.519±0.228, mean_b=+0.528±0.264, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [26]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.051229582997621
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [26]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3538376670003345
+Done initializing
+Prompt 26: KS=0.1020, p=0.0110, mean_a=+0.604±0.261, mean_b=+0.573±0.255, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [27]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0808864580030786
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [27]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3553702089993749
+Done initializing
+Prompt 27: KS=0.1300, p=0.0004, mean_a=+0.407±0.252, mean_b=+0.450±0.289, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [28]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.061425332998624
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [28]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3323541249992559
+Done initializing
+Prompt 28: KS=0.0440, p=0.7189, mean_a=+0.299±0.547, mean_b=+0.325±0.540, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [29]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0493934170008288
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [29]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3440269579987216
+Done initializing
+Prompt 29: KS=0.0620, p=0.2919, mean_a=+0.358±0.460, mean_b=+0.338±0.454, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [30]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.060900540996954
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [30]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3397854169998027
+Done initializing
+Prompt 30: KS=0.1180, p=0.0019, mean_a=+0.278±0.523, mean_b=+0.166±0.520, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [31]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0853905000003579
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [31]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34836449999784236
+Done initializing
+Prompt 31: KS=0.0380, p=0.8637, mean_a=+0.085±0.481, mean_b=+0.087±0.492, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [32]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0819946250012435
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [32]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34457404099885025
+Done initializing
+Prompt 32: KS=0.1040, p=0.0089, mean_a=+0.265±0.440, mean_b=+0.190±0.451, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [33]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0684087089975947
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [33]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3361049170016486
+Done initializing
+Prompt 33: KS=0.0800, p=0.0815, mean_a=+0.210±0.435, mean_b=+0.249±0.436, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [34]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0666192089993274
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [34]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.38702933300010045
+Done initializing
+Prompt 34: KS=0.1400, p=0.0001, mean_a=-0.058±0.535, mean_b=+0.118±0.524, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [35]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.043737499996496
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [35]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.36923995899996953
+Done initializing
+Prompt 35: KS=0.1160, p=0.0024, mean_a=+0.092±0.420, mean_b=+0.157±0.464, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [36]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.013225541999418
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [36]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.36453783300021314
+Done initializing
+Prompt 36: KS=0.1820, p=0.0000, mean_a=-0.182±0.522, mean_b=+0.006±0.501, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [37]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.106547875002434
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [37]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3582373749995895
+Done initializing
+Prompt 37: KS=0.0960, p=0.0199, mean_a=+0.308±0.302, mean_b=+0.347±0.313, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [38]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9775075830002606
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [38]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3294903330024681
+Done initializing
+Prompt 38: KS=0.0960, p=0.0199, mean_a=+0.170±0.408, mean_b=+0.131±0.439, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [39]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9655754170016735
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [39]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3129726670013042
+Done initializing
+Prompt 39: KS=0.0800, p=0.0815, mean_a=+0.151±0.493, mean_b=+0.157±0.461, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [40]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.009780790998775
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [40]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3361355419983738
+Done initializing
+Prompt 40: KS=0.0480, p=0.6126, mean_a=+0.093±0.195, mean_b=+0.111±0.197, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [41]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9462257909981417
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [41]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.32335383299869136
+Done initializing
+Prompt 41: KS=0.1140, p=0.0030, mean_a=+0.190±0.284, mean_b=+0.261±0.323, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [42]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0070675000024494
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [42]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3394420420008828
+Done initializing
+Prompt 42: KS=0.0520, p=0.5089, mean_a=+0.177±0.387, mean_b=+0.212±0.378, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [43]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9954210830001102
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [43]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3412079579975398
+Done initializing
+Prompt 43: KS=0.1000, p=0.0134, mean_a=+0.055±0.371, mean_b=+0.112±0.398, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [44]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0467731670032663
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [44]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3408358329979819
+Done initializing
+Prompt 44: KS=0.0520, p=0.5089, mean_a=+0.103±0.209, mean_b=+0.103±0.229, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [45]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0198418330001005
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [45]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3147800830010965
+Done initializing
+Prompt 45: KS=0.2040, p=0.0000, mean_a=+0.302±0.219, mean_b=+0.227±0.236, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [46]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.159024832999421
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [46]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3573963749986433
+Done initializing
+Prompt 46: KS=0.0780, p=0.0955, mean_a=-0.173±0.369, mean_b=-0.125±0.404, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [47]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9231016249977984
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [47]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.28577054199922713
+Done initializing
+Prompt 47: KS=0.0280, p=0.9897, mean_a=+0.078±0.199, mean_b=+0.068±0.188, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [48]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.8877308329974767
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [48]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.27806225000313134
+Done initializing
+Prompt 48: KS=0.0340, p=0.9351, mean_a=+0.059±0.274, mean_b=+0.072±0.290, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [49]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0545600420009578
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [49]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3787637919995177
+Done initializing
+Prompt 49: KS=0.0780, p=0.0955, mean_a=+0.392±0.298, mean_b=+0.356±0.287, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [50]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0390762919996632
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [50]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.37483612500000163
+Done initializing
+Prompt 50: KS=0.1080, p=0.0058, mean_a=+0.416±0.295, mean_b=+0.450±0.299, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [51]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.102617000000464
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [51]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3866013750011916
+Done initializing
+Prompt 51: KS=0.0520, p=0.5089, mean_a=+0.554±0.343, mean_b=+0.557±0.301, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [52]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1007339579991822
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [52]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3569146659974649
+Done initializing
+Prompt 52: KS=0.0540, p=0.4599, mean_a=+0.287±0.300, mean_b=+0.264±0.301, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [53]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1547564169995894
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [53]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.36950187500042375
+Done initializing
+Prompt 53: KS=0.0500, p=0.5600, mean_a=+0.644±0.274, mean_b=+0.636±0.262, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [54]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.084683249999216
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [54]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.35769216699918616
+Done initializing
+Prompt 54: KS=0.1680, p=0.0000, mean_a=-0.267±0.437, mean_b=-0.379±0.455, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [55]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0176233749989478
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [55]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3424329999979818
+Done initializing
+Prompt 55: KS=0.0580, p=0.3699, mean_a=+0.238±0.299, mean_b=+0.203±0.301, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [56]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9274490000025253
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [56]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3108018329985498
+Done initializing
+Prompt 56: KS=0.0440, p=0.7189, mean_a=+0.521±0.251, mean_b=+0.529±0.263, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [57]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9720826670018141
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [57]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.33831745800125645
+Done initializing
+Prompt 57: KS=0.1520, p=0.0000, mean_a=-0.095±0.506, mean_b=-0.202±0.537, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [58]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0105754590003926
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [58]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34220537500004866
+Done initializing
+Prompt 58: KS=0.1240, p=0.0009, mean_a=+0.582±0.279, mean_b=+0.519±0.288, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [59]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0335094580004807
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [59]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3421519170005922
+Done initializing
+Prompt 59: KS=0.0600, p=0.3294, mean_a=+0.281±0.438, mean_b=+0.266±0.441, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [60]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9807515419997799
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [60]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.31784725000034086
+Done initializing
+Prompt 60: KS=0.0720, p=0.1497, mean_a=+0.286±0.319, mean_b=+0.258±0.353, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [61]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.110077541001374
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [61]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34361845799867297
+Done initializing
+Prompt 61: KS=0.0860, p=0.0495, mean_a=-0.290±0.412, mean_b=-0.218±0.447, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [62]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1046695829973032
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [62]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.350174249997508
+Done initializing
+Prompt 62: KS=0.0680, p=0.1980, mean_a=-0.035±0.511, mean_b=-0.094±0.511, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [63]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0679398340034822
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [63]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3346581250007148
+Done initializing
+Prompt 63: KS=0.1800, p=0.0000, mean_a=+0.418±0.470, mean_b=+0.247±0.518, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [64]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0114830840029754
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [64]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3190012500017474
+Done initializing
+Prompt 64: KS=0.1140, p=0.0030, mean_a=+0.551±0.319, mean_b=+0.481±0.343, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [65]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1353284169999824
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [65]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.4084930409990193
+Done initializing
+Prompt 65: KS=0.1360, p=0.0002, mean_a=-0.686±0.233, mean_b=-0.619±0.271, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [66]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9269279170002847
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [66]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3265275419980753
+Done initializing
+Prompt 66: KS=0.0340, p=0.9351, mean_a=+0.373±0.425, mean_b=+0.379±0.430, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [67]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.084661958997458
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [67]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.39645966600073734
+Done initializing
+Prompt 67: KS=0.0780, p=0.0955, mean_a=-0.074±0.372, mean_b=-0.123±0.381, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [68]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0117967920014053
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [68]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3220189579988073
+Done initializing
+Prompt 68: KS=0.0520, p=0.5089, mean_a=-0.239±0.457, mean_b=-0.203±0.457, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [69]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.102018292000139
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [69]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.35371849999864935
+Done initializing
+Prompt 69: KS=0.0580, p=0.3699, mean_a=-0.004±0.408, mean_b=-0.010±0.437, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [70]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0787730000010924
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [70]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3480034159983916
+Done initializing
+Prompt 70: KS=0.0520, p=0.5089, mean_a=-0.335±0.440, mean_b=-0.321±0.440, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [71]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0647545829997398
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [71]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3513599580001028
+Done initializing
+Prompt 71: KS=0.0520, p=0.5089, mean_a=-0.140±0.464, mean_b=-0.118±0.454, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [72]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.020559750002576
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [72]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3278852920011559
+Done initializing
+Prompt 72: KS=0.0640, p=0.2576, mean_a=+0.373±0.401, mean_b=+0.327±0.432, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [73]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.023089375001291
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [73]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3398425829982443
+Done initializing
+Prompt 73: KS=0.0760, p=0.1114, mean_a=-0.118±0.539, mean_b=-0.163±0.512, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [74]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0881289999997534
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [74]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3642033329997503
+Done initializing
+Prompt 74: KS=0.0640, p=0.2576, mean_a=+0.787±0.130, mean_b=+0.802±0.127, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [75]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0870324999996228
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [75]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3514063750008063
+Done initializing
+Prompt 75: KS=0.0900, p=0.0348, mean_a=+0.539±0.289, mean_b=+0.586±0.268, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [76]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.050886167002318
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [76]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3489821250004752
+Done initializing
+Prompt 76: KS=0.1420, p=0.0001, mean_a=+0.839±0.142, mean_b=+0.788±0.199, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [77]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.064379250001366
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [77]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3346804169996176
+Done initializing
+Prompt 77: KS=0.1220, p=0.0012, mean_a=+0.871±0.130, mean_b=+0.852±0.153, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [78]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0781388329996844
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [78]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34284404199934215
+Done initializing
+Prompt 78: KS=0.1120, p=0.0038, mean_a=+0.850±0.172, mean_b=+0.820±0.194, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [79]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9449606250018405
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [79]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3127918749996752
+Done initializing
+Prompt 79: KS=0.0440, p=0.7189, mean_a=+0.846±0.142, mean_b=+0.839±0.157, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [80]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9956172920028621
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [80]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3225051249974058
+Done initializing
+Prompt 80: KS=0.0840, p=0.0587, mean_a=+0.835±0.148, mean_b=+0.845±0.139, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [81]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0696158329992613
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [81]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.39868316600041
+Done initializing
+Prompt 81: KS=0.0520, p=0.5089, mean_a=+0.824±0.137, mean_b=+0.828±0.116, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [82]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0691926250001416
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [82]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3861735420032346
+Done initializing
+Prompt 82: KS=0.0540, p=0.4599, mean_a=+0.621±0.294, mean_b=+0.599±0.319, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [83]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1069877499976428
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [83]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.39270720899730804
+Done initializing
+Prompt 83: KS=0.1120, p=0.0038, mean_a=+0.529±0.447, mean_b=+0.391±0.519, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [84]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0558473329983826
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [84]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3395955830019375
+Done initializing
+Prompt 84: KS=0.0760, p=0.1114, mean_a=+0.525±0.289, mean_b=+0.575±0.262, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [85]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0638636670009873
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [85]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3470907080009056
+Done initializing
+Prompt 85: KS=0.0860, p=0.0495, mean_a=+0.539±0.262, mean_b=+0.496±0.292, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [86]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0278082500008168
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [86]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34037970899953507
+Done initializing
+Prompt 86: KS=0.0340, p=0.9351, mean_a=+0.182±0.292, mean_b=+0.177±0.305, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [87]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9902812499967695
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [87]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.33225091700296616
+Done initializing
+Prompt 87: KS=0.1160, p=0.0024, mean_a=+0.310±0.416, mean_b=+0.208±0.450, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [88]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0038058330028434
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [88]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.33611866700084647
+Done initializing
+Prompt 88: KS=0.0480, p=0.6126, mean_a=+0.289±0.359, mean_b=+0.275±0.331, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [89]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.002553624999564
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [89]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34168770800170023
+Done initializing
+Prompt 89: KS=0.0600, p=0.3294, mean_a=+0.059±0.140, mean_b=+0.081±0.175, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [90]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9429633750005451
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [90]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3211691670003347
+Done initializing
+Prompt 90: KS=0.0580, p=0.3699, mean_a=+0.077±0.178, mean_b=+0.067±0.171, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [91]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0402689999973518
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [91]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3374570829982986
+Done initializing
+Prompt 91: KS=0.0280, p=0.9897, mean_a=+0.102±0.179, mean_b=+0.098±0.185, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [92]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0336443750020408
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [92]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3314234999998007
+Done initializing
+Prompt 92: KS=0.0320, p=0.9603, mean_a=+0.072±0.218, mean_b=+0.070±0.212, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [93]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0533302500007267
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [93]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3368222909994074
+Done initializing
+Prompt 93: KS=0.0460, p=0.6659, mean_a=-0.003±0.247, mean_b=+0.015±0.262, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [94]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.1108798749992275
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [94]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3488214169992716
+Done initializing
+Prompt 94: KS=0.0800, p=0.0815, mean_a=+0.210±0.345, mean_b=+0.255±0.310, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [95]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0958005840002443
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [95]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.34860687499894993
+Done initializing
+Prompt 95: KS=0.0460, p=0.6659, mean_a=+0.026±0.408, mean_b=+0.021±0.403, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [96]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.93170212500263
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [96]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3552972500001488
+Done initializing
+Prompt 96: KS=0.1200, p=0.0015, mean_a=+0.034±0.128, mean_b=+0.072±0.184, ✅ DETECTED
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [97]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9781244170007994
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [97]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3672975839981518
+Done initializing
+Prompt 97: KS=0.0460, p=0.6659, mean_a=+0.058±0.237, mean_b=+0.043±0.241, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [98]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 0.9304939579997153
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [98]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3556234579991724
+Done initializing
+Prompt 98: KS=0.0700, p=0.1726, mean_a=+0.483±0.312, mean_b=+0.513±0.307, ❌ not detected
+Loading dataset from source: fp32
+Prompt IDs: {'wikipedia_en': [99]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 15000 entries: 1.0058582500023476
+Done initializing
+Loading dataset from source: nf4
+Prompt IDs: {'wikipedia_en': [99]}
+Initializing DistributionFromDataset; loading k...
+	Time to load distribution 0 w/ 5000 entries: 0.3265680419972341
+Done initializing
+Prompt 99: KS=0.1320, p=0.0003, mean_a=+0.384±0.323, mean_b=+0.309±0.345, ✅ DETECTED
+
+================================================================================
+TOP 5 PROMPTS BY KS STATISTIC:
+================================================================================
+1. Prompt 45: KS=0.2040, p=0.0000, mean_diff=0.0750
+2. Prompt 36: KS=0.1820, p=0.0000, mean_diff=0.1876
+3. Prompt 63: KS=0.1800, p=0.0000, mean_diff=0.1704
+4. Prompt 54: KS=0.1680, p=0.0000, mean_diff=0.1127
+5. Prompt 57: KS=0.1520, p=0.0000, mean_diff=0.1069
+
+================================================================================
+PROMPTS WITH SIGNIFICANT DETECTION (p < 0.05):
+================================================================================
+Prompt 45: KS=0.2040, p=0.0000
+Prompt 36: KS=0.1820, p=0.0000
+Prompt 63: KS=0.1800, p=0.0000
+Prompt 54: KS=0.1680, p=0.0000
+Prompt 57: KS=0.1520, p=0.0000
+Prompt 76: KS=0.1420, p=0.0001
+Prompt 34: KS=0.1400, p=0.0001
+Prompt 65: KS=0.1360, p=0.0002
+Prompt 99: KS=0.1320, p=0.0003
+Prompt 27: KS=0.1300, p=0.0004
+Prompt 5: KS=0.1280, p=0.0005
+Prompt 58: KS=0.1240, p=0.0009
+Prompt 23: KS=0.1220, p=0.0012
+Prompt 77: KS=0.1220, p=0.0012
+Prompt 96: KS=0.1200, p=0.0015
+Prompt 30: KS=0.1180, p=0.0019
+Prompt 35: KS=0.1160, p=0.0024
+Prompt 87: KS=0.1160, p=0.0024
+Prompt 41: KS=0.1140, p=0.0030
+Prompt 64: KS=0.1140, p=0.0030
+Prompt 78: KS=0.1120, p=0.0038
+Prompt 83: KS=0.1120, p=0.0038
+Prompt 50: KS=0.1080, p=0.0058
+Prompt 32: KS=0.1040, p=0.0089
+Prompt 26: KS=0.1020, p=0.0110
+Prompt 43: KS=0.1000, p=0.0134
+Prompt 37: KS=0.0960, p=0.0199
+Prompt 38: KS=0.0960, p=0.0199
+Prompt 75: KS=0.0900, p=0.0348
+Prompt 2: KS=0.0880, p=0.0416
+Prompt 6: KS=0.0880, p=0.0416
+Prompt 25: KS=0.0860, p=0.0495
+Prompt 61: KS=0.0860, p=0.0495
+Prompt 85: KS=0.0860, p=0.0495
+
+================================================================================
+PROMPTS WITH HIGHEST SENTIMENT VARIANCE (std dev):
+================================================================================
+1. Prompt 28: max_std=0.5472, KS=0.0440
+2. Prompt 73: max_std=0.5392, KS=0.0760
+3. Prompt 57: max_std=0.5370, KS=0.1520
+4. Prompt 34: max_std=0.5345, KS=0.1400
+5. Prompt 30: max_std=0.5228, KS=0.1180
+
+================================================================================
+RECOMMENDED PROMPT COMBINATION:
+================================================================================
+Use prompts: [45, 36, 63]
+
+Command:
+python mmd-ks-comparison.py \
+  --model_a meta-llama/Meta-Llama-3-8B-Instruct \
+  --model_b meta-llama/Meta-Llama-3-8B-Instruct \
+  --source_a fp32 \
+  --source_b nf4 \
+  --dataset wikipedia_en \
+  --prompts 45 36 63 \
+  --L 200 \
+  --samples 500
