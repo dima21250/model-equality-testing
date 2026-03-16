@@ -7,6 +7,7 @@ It reports the test statistic, p‑value, wall‑clock time, and memory usage.
 import streamlit as st
 from model_equality_testing.utils import Stopwatch, MemoryWatch
 from model_equality_testing.pvalue import AnalyticalKSPvalueCalculator
+from scipy.stats import ks_2samp
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 # Ensure data is loaded in the session state
@@ -26,6 +27,10 @@ with col1:
     model_a = st.selectbox("Model A", model_keys, index=0, key="model_a")
 with col2:
     model_b = st.selectbox("Model B", model_keys, index=1, key="model_b")
+# Display sample sizes for the selected models
+size_a = samples[model_a].N
+size_b = samples[model_b].N
+st.write(f"Sample size per model: {model_a}: {size_a}, {model_b}: {size_b}")
 
 if st.button("Run Test"):
     st.info(f"Running VADER‑KS test: **{model_a}** vs **{model_b}**")
@@ -41,23 +46,18 @@ if st.button("Run Test"):
                 scores.append(analyzer.polarity_scores(txt)["compound"])
             return scores
 
-        reference_scores = _vader_scores(samples[model_a])
-        analytic_calc = AnalyticalKSPvalueCalculator(reference_scores)
-
-        # Run the generic two‑sample routine with the analytic p‑value
-        from model_equality_testing.algorithm import run_two_sample_test
-        pvalue, test_stat = run_two_sample_test(
-            samples[model_a],
-            samples[model_b],
-            get_pvalue=analytic_calc,
-            stat_type="two_sample_vader_ks",
-        )
+        # Compute VADER scores for both selected models
+        scores_a = _vader_scores(samples[model_a])
+        scores_b = _vader_scores(samples[model_b])
+        # Compute KS statistic and p-value directly
+        test_stat, pvalue = ks_2samp(scores_a, scores_b)
     # ---- End timing block ----
 
     st.success("Test completed!")
     st.metric(label="VADER‑KS statistic (D)", value=f"{test_stat:.5f}")
     st.metric(label="Analytic p‑value", value=f"{pvalue:.5f}")
     st.metric(label="Wall‑clock time (s)", value=f"{sw.time:.2f}")
+    st.metric(label="Sample size per model", value=f"{model_a}: {size_a}, {model_b}: {size_b}")
   
 
     if pvalue < 0.05:

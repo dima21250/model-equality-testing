@@ -102,8 +102,12 @@ if path_input:
                 # Determine maximum k based on the smallest model sample count
                 min_samples = min(sample_counts.values()) if sample_counts else 0
                 max_k = min_samples // 11 if min_samples >= 11 else 1
+                # Use previously selected k if available, otherwise default to max_k
+                default_k = st.session_state.get('k', max_k)
                 # Slider for k (subsample multiplier)
-                k = st.slider("Sample size multiplier (k)", min_value=1, max_value=max_k, value=1)
+                k = st.slider("Sample size multiplier (k)", min_value=1, max_value=max_k, value=default_k)
+                # Store k in session state for persistence across pages
+                st.session_state['k'] = k
                 # Create subsampled data using the new utility
                 from model_equality_testing.corpus_sampling import sample_corpus
                 subsampled = sample_corpus(models=list(original_data["samples"].keys()), data=original_data, k=k)
