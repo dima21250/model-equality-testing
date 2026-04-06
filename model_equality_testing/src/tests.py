@@ -7,7 +7,7 @@ from model_equality_testing.utils import (
     Stopwatch,
     get_inv,
 )
-from model_equality_testing.src.features import get_vader_scores
+from model_equality_testing.src.features import get_vader_scores, get_perplexity_scores
 import torch
 from typing import Union, Tuple, List, Dict
 from model_equality_testing.distribution import (
@@ -441,6 +441,90 @@ def two_sample_vader_ks(
     scores1 = get_scores(sample1)
     scores2 = get_scores(sample2)
 
+    return ks_2samp(scores1, scores2).statistic
+
+
+def two_sample_perplexity_ks(
+    sample1: CompletionSample,
+    sample2: CompletionSample,
+    kenlm_model_path: str,
+    spm_model_path: str = None,
+    granularity: str = "word",
+    empty_text_score: Union[float, str] = "inf",
+    zero_tokens_score: Union[float, str] = "inf",
+    warn_on_degenerate: bool = True,
+) -> float:
+    """
+    Computes two-sample K-S test statistic using KenLM perplexity scores.
+
+    This test extracts perplexity scores from both samples using a KenLM language
+    model, then computes the Kolmogorov-Smirnov test statistic on the distributions
+    of perplexity scores.
+
+    Requires kenlm package: pip install kenlm
+
+    Args:
+        sample1: First CompletionSample with unicode codepoint completions
+        sample2: Second CompletionSample with unicode codepoint completions
+        kenlm_model_path: Path to trained KenLM model (.arpa or .bin)
+        spm_model_path: Optional path to sentencepiece model for text preprocessing
+        granularity: "word" (split whitespace), "char" (character-level), or "token" (sentencepiece)
+        empty_text_score: Score for empty strings - "inf", "nan", or float value (default: "inf")
+        zero_tokens_score: Score for zero-token texts - "inf", "nan", or float value (default: "inf")
+        warn_on_degenerate: Log warnings for degenerate cases (default: True)
+
+    Returns:
+        K-S test statistic (float)
+
+    Examples:
+        >>> # Basic usage with word-level perplexity
+        >>> stat = two_sample_perplexity_ks(
+        ...     sample1, sample2,
+        ...     kenlm_model_path="model.arpa"
+        ... )
+
+        >>> # With sentencepiece preprocessing
+        >>> stat = two_sample_perplexity_ks(
+        ...     sample1, sample2,
+        ...     kenlm_model_path="model.arpa",
+        ...     spm_model_path="tokenizer.model",
+        ...     granularity="token"
+        ... )
+
+    See Also:
+        get_perplexity_scores: Feature extraction function
+        train_kenlm_from_sample: Utility to train KenLM models from samples
+        two_sample_vader_ks: Similar K-S test using sentiment scores
+    """
+    try:
+        import kenlm
+    except ImportError as e:
+        raise ImportError(
+            "Please install kenlm to use perplexity-based K-S tests: pip install kenlm"
+        ) from e
+
+    # Extract perplexity scores from both samples
+    scores1 = get_perplexity_scores(
+        sample1,
+        kenlm_model_path=kenlm_model_path,
+        spm_model_path=spm_model_path,
+        granularity=granularity,
+        empty_text_score=empty_text_score,
+        zero_tokens_score=zero_tokens_score,
+        warn_on_degenerate=warn_on_degenerate,
+    )
+
+    scores2 = get_perplexity_scores(
+        sample2,
+        kenlm_model_path=kenlm_model_path,
+        spm_model_path=spm_model_path,
+        granularity=granularity,
+        empty_text_score=empty_text_score,
+        zero_tokens_score=zero_tokens_score,
+        warn_on_degenerate=warn_on_degenerate,
+    )
+
+    # Compute and return K-S statistic
     return ks_2samp(scores1, scores2).statistic
 
 

@@ -28,6 +28,15 @@ dependencies = [
     "python-dotenv"
 ]
 
+[project.optional-dependencies]
+perplexity = [
+    "kenlm",
+    "sentencepiece"
+]
+sentiment = [
+    "vaderSentiment"
+]
+
 [project.urls]
 Homepage = "https://github.com/i-gao/model-equality-testing"
 Issues = "https://github.com/i-gao/model-equality-testing/issues"
