@@ -401,7 +401,53 @@ def two_sample_ks(
 
 def two_sample_ks_statistic(sample1, sample2, feature_fn=get_vader_scores):
     """
-    Computes the K‑S statistic (D) between two sets of featured samples.
+    Generic two-sample Kolmogorov-Smirnov test using custom feature extraction.
+
+    This is a flexible function that computes the K-S statistic on any feature
+    projection of the samples. It accepts a feature extraction function that
+    converts CompletionSample objects to arrays of scalar scores.
+
+    Args:
+        sample1: First CompletionSample
+        sample2: Second CompletionSample
+        feature_fn: Function that takes a CompletionSample and returns array of scores.
+            Default: get_vader_scores (sentiment analysis)
+
+    Returns:
+        K-S test statistic (float)
+
+    Examples:
+        >>> # Using VADER sentiment (default)
+        >>> stat = two_sample_ks_statistic(sample1, sample2)
+
+        >>> # Using perplexity scores with functools.partial
+        >>> from functools import partial
+        >>> from model_equality_testing.src.features import get_perplexity_scores
+        >>> ppl_fn = partial(get_perplexity_scores, kenlm_model_path="model.arpa")
+        >>> stat = two_sample_ks_statistic(sample1, sample2, feature_fn=ppl_fn)
+
+        >>> # Via run_two_sample_test with perplexity
+        >>> from model_equality_testing.algorithm import run_two_sample_test
+        >>> pvalue, stat = run_two_sample_test(
+        ...     sample1, sample2,
+        ...     stat_type="two_sample_ks_statistic",
+        ...     feature_fn=ppl_fn,
+        ...     pvalue_type="permutation_pvalue",
+        ...     b=1000
+        ... )
+
+        >>> # Custom feature function (e.g., text length)
+        >>> def length_feature(sample):
+        ...     from model_equality_testing.src.features import decode_sample_to_strings
+        ...     texts = decode_sample_to_strings(sample)
+        ...     return np.array([len(text) for text in texts])
+        >>> stat = two_sample_ks_statistic(sample1, sample2, feature_fn=length_feature)
+
+    See Also:
+        two_sample_vader_ks: VADER sentiment-based K-S test
+        two_sample_perplexity_ks: Perplexity-based K-S test
+        get_vader_scores: Default feature function (sentiment)
+        get_perplexity_scores: Perplexity feature function
     """
     scores1 = feature_fn(sample1)
     scores2 = feature_fn(sample2)
