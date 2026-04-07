@@ -6,7 +6,8 @@ This script demonstrates:
 1. Loading data from the MET dataset
 2. Training a KenLM language model
 3. Running perplexity-based K-S tests
-4. Comparing different quantizations
+4. SANITY CHECK: Comparing two independent fp32 samples (expect no difference)
+5. ACTUAL TEST: Comparing fp32 vs int8 quantization (detect if quantization affects perplexity)
 """
 
 import os
@@ -71,10 +72,12 @@ def main():
     )
     print(f"✓ Model saved to {model_path}")
 
-    # Step 3: Test against different quantizations
+    # Step 3: Draw test samples
     print(f"\n[4/5] Drawing test samples ({N_TEST} each)...")
+
+    # Draw first fp32 sample
     fp32_test = fp32_dist.sample(n=N_TEST)
-    print(f"✓ fp32 test sample: {fp32_test.N} completions")
+    print(f"✓ fp32 test sample #1: {fp32_test.N} completions")
 
     # Load int8 quantization
     int8_dist = load_distribution(
@@ -87,14 +90,32 @@ def main():
     )
     int8_test = int8_dist.sample(n=N_TEST)
     print(f"✓ int8 test sample: {int8_test.N} completions")
+    print(f"\nNote: A second independent fp32 sample will be drawn for sanity check")
 
     # Step 4: Run perplexity K-S tests
     print("\n[5/5] Running perplexity-based K-S tests...")
-    print("-" * 70)
+    print("=" * 70)
+    print("We'll run two tests:")
+    print("  1. SANITY CHECK: fp32 vs fp32 (expect p-value >= 0.05)")
+    print("  2. ACTUAL TEST: fp32 vs int8 (unknown outcome)")
+    print("=" * 70)
 
-    # Test 1: fp32 vs fp32 (should NOT be significant)
-    print("\nTest 1: fp32 vs fp32 (sanity check)")
+    # Test 1: fp32 vs fp32 (SANITY CHECK - should NOT be significant)
+    print("\n" + "─" * 70)
+    print("Test 1: SANITY CHECK (fp32 vs fp32)")
+    print("─" * 70)
+    print("Purpose: Verify that independent samples from the SAME distribution")
+    print("         show NO significant difference (validates our methodology)")
+    print("")
+    print("Expected: High p-value (>= 0.05) indicating no significant difference")
+    print("")
+
+    # Draw a second independent fp32 sample
     fp32_test2 = fp32_dist.sample(n=N_TEST)
+    print(f"Sample 1: {fp32_test.N} fp32 completions")
+    print(f"Sample 2: {fp32_test2.N} fp32 completions (independent draw)")
+    print("")
+
     pvalue1, stat1 = perplexity_ks_test(
         fp32_test,
         fp32_test2,
@@ -102,15 +123,40 @@ def main():
         granularity="word",
         pvalue_method="analytical"
     )
-    print(f"  K-S statistic: {stat1:.4f}")
-    print(f"  p-value: {pvalue1:.4f}")
-    if pvalue1 >= 0.05:
-        print("  ✓ PASS: No significant difference (as expected)")
-    else:
-        print("  ⚠ WARNING: Unexpected significant difference")
 
-    # Test 2: fp32 vs int8 (may or may not be significant)
-    print("\nTest 2: fp32 vs int8 (quantization test)")
+    print(f"Results:")
+    print(f"  K-S statistic: {stat1:.4f}")
+    print(f"  p-value:       {pvalue1:.4f}")
+    print("")
+
+    if pvalue1 >= 0.05:
+        print("  ✓ ✓ ✓ SANITY CHECK PASSED ✓ ✓ ✓")
+        print(f"  No significant difference detected (p={pvalue1:.4f} >= 0.05)")
+        print("  This confirms our methodology is working correctly!")
+        sanity_pass = True
+    else:
+        print("  ⚠ ⚠ ⚠ SANITY CHECK FAILED ⚠ ⚠ ⚠")
+        print(f"  Unexpected significant difference (p={pvalue1:.4f} < 0.05)")
+        print("  This suggests:")
+        print("    - Sample size may be too small")
+        print("    - Random chance (happens ~5% of the time)")
+        print("    - Possible issue with the test setup")
+        sanity_pass = False
+
+    # Test 2: fp32 vs int8 (ACTUAL TEST - may or may not be significant)
+    print("\n" + "─" * 70)
+    print("Test 2: QUANTIZATION TEST (fp32 vs int8)")
+    print("─" * 70)
+    print("Purpose: Detect if int8 quantization changes perplexity distribution")
+    print("")
+    print("If p < 0.05: int8 significantly differs from fp32")
+    print("If p >= 0.05: int8 statistically similar to fp32")
+    print("")
+
+    print(f"Sample 1: {fp32_test.N} fp32 completions")
+    print(f"Sample 2: {int8_test.N} int8 completions")
+    print("")
+
     pvalue2, stat2 = perplexity_ks_test(
         fp32_test,
         int8_test,
@@ -118,27 +164,66 @@ def main():
         granularity="word",
         pvalue_method="analytical"
     )
+
+    print(f"Results:")
     print(f"  K-S statistic: {stat2:.4f}")
-    print(f"  p-value: {pvalue2:.4f}")
+    print(f"  p-value:       {pvalue2:.4f}")
+    print("")
+
     if pvalue2 < 0.05:
         print("  ✗ Significant difference in perplexity distributions")
-        print("    → int8 quantization affects language statistics")
+        print("  Interpretation:")
+        print("    → int8 quantization AFFECTS language statistics")
+        print("    → Completions have different perplexity patterns")
+        print(f"    → Effect size: K-S statistic = {stat2:.4f}")
     else:
         print("  ✓ No significant difference in perplexity distributions")
-        print("    → int8 quantization preserves language statistics")
+        print("  Interpretation:")
+        print("    → int8 quantization PRESERVES language statistics")
+        print("    → Completions have similar perplexity patterns")
+        print(f"    → int8 is statistically equivalent to fp32 (p={pvalue2:.4f})")
 
     # Summary
     print("\n" + "="*70)
-    print("Summary")
+    print("SUMMARY")
     print("="*70)
-    print(f"Trained KenLM model: {model_path}")
-    print(f"  - Trained on {N_TRAIN} fp32 completions")
-    print(f"  - Order: 3-gram")
-    print(f"  - Granularity: word-level")
+
+    print(f"\nKenLM Model:")
+    print(f"  File: {model_path}")
+    print(f"  Training data: {N_TRAIN} fp32 completions")
+    print(f"  Order: 3-gram")
+    print(f"  Granularity: word-level")
+
     print(f"\nTest Results:")
-    print(f"  fp32 vs fp32: K-S={stat1:.4f}, p={pvalue1:.4f} {'✓' if pvalue1 >= 0.05 else '✗'}")
-    print(f"  fp32 vs int8: K-S={stat2:.4f}, p={pvalue2:.4f} {'✓' if pvalue2 >= 0.05 else '✗'}")
+    print(f"  ┌─ Sanity Check (fp32 vs fp32):")
+    print(f"  │   K-S statistic: {stat1:.4f}")
+    print(f"  │   p-value:       {pvalue1:.4f}")
+    print(f"  │   Status:        {'✓ PASS' if pvalue1 >= 0.05 else '✗ FAIL'}")
+    if not sanity_pass:
+        print(f"  │   Note:         Sanity check failed - results may be unreliable")
+    print(f"  │")
+    print(f"  └─ Quantization Test (fp32 vs int8):")
+    print(f"      K-S statistic: {stat2:.4f}")
+    print(f"      p-value:       {pvalue2:.4f}")
+    if pvalue2 < 0.05:
+        print(f"      Result:        ✗ DIFFERENT (int8 affects perplexity)")
+    else:
+        print(f"      Result:        ✓ SIMILAR (int8 preserves perplexity)")
+
     print("\n" + "="*70)
+
+    # Interpretation
+    if sanity_pass and pvalue2 < 0.05:
+        print("CONCLUSION: int8 quantization significantly changes perplexity")
+        print("            distributions compared to fp32 baseline.")
+    elif sanity_pass and pvalue2 >= 0.05:
+        print("CONCLUSION: int8 quantization preserves perplexity distributions")
+        print("            statistically equivalent to fp32 baseline.")
+    elif not sanity_pass:
+        print("CONCLUSION: Results are inconclusive due to failed sanity check.")
+        print("            Consider increasing sample size or re-running the test.")
+
+    print("="*70)
 
     # Optional: Show how to use with run_two_sample_test
     print("\nAlternative: Using run_two_sample_test framework:")
