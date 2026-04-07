@@ -9,7 +9,7 @@ from model_equality_testing.distribution import (
 import tqdm
 import matplotlib.pyplot as plt
 from scipy.stats import ks_2samp
-from model_equality_testing.src.features import get_vader_scores
+from .features import get_vader_scores
 
 
 def _plot_empirical_distribution(stats, ax=None, label="", **kwargs):

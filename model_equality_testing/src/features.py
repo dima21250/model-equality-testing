@@ -239,9 +239,34 @@ def train_kenlm_from_sample(
         raise RuntimeError(
             "lmplz binary not found. Please install KenLM binaries:\n"
             "  - Ubuntu/Debian: apt-get install kenlm\n"
-            "  - macOS: brew install kenlm\n"
-            "  - Or build from source: https://github.com/kpu/kenlm"
+            "  - macOS: Build from source (https://github.com/kpu/kenlm)\n"
+            "  - Or use a pre-trained KenLM model with get_perplexity_scores()"
         )
+
+    # Try running lmplz to verify it works
+    # Note: lmplz --help exits with code 1, but that's normal
+    try:
+        result = subprocess.run(
+            ['lmplz', '--help'],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        # Check if the output looks like lmplz help text
+        if "Builds unpruned language models" not in result.stderr and \
+           "Builds unpruned language models" not in result.stdout:
+            raise RuntimeError(
+                f"lmplz binary found but not working properly.\n"
+                f"Exit code: {result.returncode}\n"
+                f"Output: {result.stdout[:200]}\n"
+                f"Error: {result.stderr[:200]}\n\n"
+                "This is often caused by missing/incompatible boost libraries.\n"
+                "Workaround: Use a pre-trained KenLM model instead:\n"
+                "  - Train externally: https://github.com/kpu/kenlm#using-the-lmplz-binary\n"
+                "  - Or download a pre-trained model"
+            )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError("lmplz binary found but hangs when executed")
 
     # Load sentencepiece if needed
     sp = None
@@ -314,7 +339,8 @@ def train_kenlm_from_sample(
             'lmplz',
             '-o', str(order),
             '--text', temp_file,
-            '--arpa', output_path
+            '--arpa', output_path,
+            '--discount_fallback'  # Handle small/artificial datasets
         ]
 
         result = subprocess.run(

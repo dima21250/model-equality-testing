@@ -7,7 +7,7 @@ from model_equality_testing.utils import (
     Stopwatch,
     get_inv,
 )
-from model_equality_testing.src.features import get_vader_scores, get_perplexity_scores
+from .features import get_vader_scores, get_perplexity_scores
 import torch
 from typing import Union, Tuple, List, Dict
 from model_equality_testing.distribution import (
@@ -772,7 +772,9 @@ IMPLEMENTED_TESTS = {
     "two_sample_L1": two_sample_L1,
     "two_sample_L2": two_sample_L2,
     "two_sample_ks": two_sample_ks,
+    "two_sample_ks_statistic": two_sample_ks_statistic,
     "two_sample_vader_ks": two_sample_vader_ks,
+    "two_sample_perplexity_ks": two_sample_perplexity_ks,
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,
