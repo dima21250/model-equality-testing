@@ -575,6 +575,239 @@ def two_sample_perplexity_ks(
 
 
 #######################
+# Quantum-inspired tests
+#######################
+
+
+def quantum_trace_distance(
+    sample1: CompletionSample,
+    sample2: CompletionSample,
+    embedding_model: str = "all-mpnet-base-v2",
+    batch_size: int = 32,
+) -> float:
+    """Two-sample test using quantum trace distance on SBERT embeddings.
+
+    This test embeds both samples using a pre-trained sentence transformer,
+    constructs density matrices from the embeddings, and computes the
+    quantum trace distance between them.
+
+    The trace distance quantifies how distinguishable two quantum states are
+    and ranges from 0 (identical) to 1 (orthogonal).
+
+    Args:
+        sample1: First CompletionSample with unicode codepoint completions
+        sample2: Second CompletionSample with unicode codepoint completions
+        embedding_model: Name of sentence-transformers model (default: all-mpnet-base-v2)
+        batch_size: Batch size for embedding inference
+
+    Returns:
+        Trace distance statistic in [0, 1]
+
+    Examples:
+        >>> # Compare two samples
+        >>> from model_equality_testing.dataset import load_distribution
+        >>> dist_fp32 = load_distribution(
+        ...     model="meta-llama/Meta-Llama-3-8B-Instruct",
+        ...     prompt_ids={"wikipedia_en": [0, 1, 2]},
+        ...     L=500, source="fp32", load_in_unicode=True
+        ... )
+        >>> dist_int8 = load_distribution(
+        ...     model="meta-llama/Meta-Llama-3-8B-Instruct",
+        ...     prompt_ids={"wikipedia_en": [0, 1, 2]},
+        ...     L=500, source="int8", load_in_unicode=True
+        ... )
+        >>> sample1 = dist_fp32.sample(n=100)
+        >>> sample2 = dist_int8.sample(n=100)
+        >>> stat = quantum_trace_distance(sample1, sample2)
+        >>> 0 <= stat <= 1
+        True
+
+        >>> # Use via run_two_sample_test
+        >>> from model_equality_testing.algorithm import run_two_sample_test
+        >>> pvalue, stat = run_two_sample_test(
+        ...     sample1, sample2,
+        ...     stat_type="quantum_trace_distance",
+        ...     pvalue_type="permutation_pvalue",
+        ...     b=100,
+        ...     embedding_model="all-MiniLM-L6-v2"  # Faster model
+        ... )
+
+    See Also:
+        quantum_von_neumann_divergence: Entropy-based divergence
+        quantum_relative_entropy_test: QRE-based test
+    """
+    try:
+        from .embeddings import embed_sample
+        from .quantum_metrics import (
+            compute_pip_matrix,
+            normalize_to_density_matrix,
+            trace_distance,
+        )
+    except ImportError as e:
+        raise ImportError(
+            "Please install sentence-transformers to use quantum-inspired tests: "
+            "pip install sentence-transformers"
+        ) from e
+
+    # Embed both samples
+    embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
+    embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
+
+    # Compute PIP matrices
+    pip1 = compute_pip_matrix(embeddings1)
+    pip2 = compute_pip_matrix(embeddings2)
+
+    # Normalize to density matrices
+    rho1 = normalize_to_density_matrix(pip1)
+    rho2 = normalize_to_density_matrix(pip2)
+
+    # Compute and return trace distance
+    return trace_distance(rho1, rho2)
+
+
+def quantum_von_neumann_divergence(
+    sample1: CompletionSample,
+    sample2: CompletionSample,
+    embedding_model: str = "all-mpnet-base-v2",
+    batch_size: int = 32,
+) -> float:
+    """Divergence based on difference in von Neumann entropies.
+
+    Computes |S(ρ_A) - S(ρ_B)| where S is the von Neumann entropy.
+
+    The von Neumann entropy measures the "quantum uncertainty" or "mixedness"
+    of a state. This metric captures differences in output diversity between
+    the two distributions.
+
+    Args:
+        sample1: First CompletionSample with unicode codepoint completions
+        sample2: Second CompletionSample with unicode codepoint completions
+        embedding_model: Name of sentence-transformers model
+        batch_size: Batch size for embedding inference
+
+    Returns:
+        Absolute difference in von Neumann entropies (non-negative)
+
+    Examples:
+        >>> # Compare diversity of two LLM outputs
+        >>> stat = quantum_von_neumann_divergence(sample1, sample2)
+        >>> stat >= 0
+        True
+
+    See Also:
+        quantum_trace_distance: Distinguishability-based metric
+        von_neumann_entropy: Underlying entropy function
+    """
+    try:
+        from .embeddings import embed_sample
+        from .quantum_metrics import (
+            compute_pip_matrix,
+            normalize_to_density_matrix,
+            von_neumann_entropy,
+        )
+    except ImportError as e:
+        raise ImportError(
+            "Please install sentence-transformers to use quantum-inspired tests: "
+            "pip install sentence-transformers"
+        ) from e
+
+    # Embed both samples
+    embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
+    embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
+
+    # Compute density matrices
+    pip1 = compute_pip_matrix(embeddings1)
+    pip2 = compute_pip_matrix(embeddings2)
+    rho1 = normalize_to_density_matrix(pip1)
+    rho2 = normalize_to_density_matrix(pip2)
+
+    # Compute entropies
+    entropy1 = von_neumann_entropy(rho1)
+    entropy2 = von_neumann_entropy(rho2)
+
+    # Return absolute difference
+    return abs(entropy1 - entropy2)
+
+
+def quantum_relative_entropy_test(
+    sample1: CompletionSample,
+    sample2: CompletionSample,
+    embedding_model: str = "all-mpnet-base-v2",
+    batch_size: int = 32,
+    symmetric: bool = True,
+) -> float:
+    """Two-sample test using quantum relative entropy (QRE).
+
+    Computes the quantum relative entropy S(ρ || σ), which measures
+    how much information is lost when using σ to approximate ρ.
+
+    If symmetric=True, computes the symmetrized version:
+        S(ρ_A || ρ_B) + S(ρ_B || ρ_A)
+    which is analogous to Jensen-Shannon divergence.
+
+    Args:
+        sample1: First CompletionSample with unicode codepoint completions
+        sample2: Second CompletionSample with unicode codepoint completions
+        embedding_model: Name of sentence-transformers model
+        batch_size: Batch size for embedding inference
+        symmetric: If True, return symmetric QRE (default: True)
+
+    Returns:
+        Quantum relative entropy (non-negative, can be np.inf)
+
+    Examples:
+        >>> # Symmetric QRE
+        >>> stat = quantum_relative_entropy_test(sample1, sample2, symmetric=True)
+        >>> stat >= 0
+        True
+
+        >>> # Asymmetric QRE (directional)
+        >>> stat = quantum_relative_entropy_test(sample1, sample2, symmetric=False)
+
+    See Also:
+        quantum_trace_distance: Alternative quantum divergence metric
+        quantum_relative_entropy: Underlying QRE function
+
+    Notes:
+        The QRE can be infinite if the density matrices have non-overlapping
+        support. This implementation uses an eigenvalue-based approximation
+        that assumes the matrices are approximately diagonal in the same basis.
+    """
+    try:
+        from .embeddings import embed_sample
+        from .quantum_metrics import (
+            compute_pip_matrix,
+            normalize_to_density_matrix,
+            quantum_relative_entropy,
+        )
+    except ImportError as e:
+        raise ImportError(
+            "Please install sentence-transformers to use quantum-inspired tests: "
+            "pip install sentence-transformers"
+        ) from e
+
+    # Embed both samples
+    embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
+    embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
+
+    # Compute density matrices
+    pip1 = compute_pip_matrix(embeddings1)
+    pip2 = compute_pip_matrix(embeddings2)
+    rho1 = normalize_to_density_matrix(pip1)
+    rho2 = normalize_to_density_matrix(pip2)
+
+    # Compute QRE
+    if symmetric:
+        # Symmetric version: S(ρ1 || ρ2) + S(ρ2 || ρ1)
+        qre_forward = quantum_relative_entropy(rho1, rho2)
+        qre_backward = quantum_relative_entropy(rho2, rho1)
+        return qre_forward + qre_backward
+    else:
+        # Asymmetric: S(ρ1 || ρ2)
+        return quantum_relative_entropy(rho1, rho2)
+
+
+#######################
 # Goodness of fit tests
 #######################
 

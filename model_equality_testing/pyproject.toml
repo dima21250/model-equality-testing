@@ -36,6 +36,9 @@ perplexity = [
 sentiment = [
     "vaderSentiment"
 ]
+quantum = [
+    "sentence-transformers>=2.2.0"
+]
 
 [project.urls]
 Homepage = "https://github.com/i-gao/model-equality-testing"
