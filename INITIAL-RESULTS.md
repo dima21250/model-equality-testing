@@ -1,0 +1,597 @@
+# Initial Results: Quantum-Inspired vs Classical Metrics
+
+## Overview
+
+This document contains initial experimental results comparing quantum-inspired metrics against classical statistical tests for detecting distribution shifts in LLM outputs.
+
+**Experimental Setup:**
+- **Models**: Llama-3-8B-Instruct (fp32 vs int8 quantization)
+- **Prompts**: 3 Wikipedia English prompts (IDs: 0, 1, 2)
+- **Sample sizes**: 100 and 1000 completions
+- **Goal**: Detect whether int8 quantization produces statistically different outputs than fp32
+
+**Metrics Compared:**
+- **Quantum-inspired**: Trace distance, Von Neumann divergence, QRE (symmetric)
+- **Classical**: MMD (Hamming kernel), VADER K-S test
+
+---
+
+## Understanding the Quantum Metrics
+
+The quantum-inspired approach treats LLM output distributions as quantum states:
+
+1. **Convert completions to embeddings** using a sentence transformer (MPNet)
+2. **Construct density matrices** from the empirical distribution of embeddings
+3. **Apply quantum information metrics** to measure distinguishability
+
+### Trace Distance
+**What it measures** (in theory): The maximum distinguishability between two quantum states. In our context, it should quantify how different the semantic distributions of fp32 vs int8 completions are.
+
+**Range**: [0, 1]
+- 0 = Identical distributions (indistinguishable)
+- 1 = Completely orthogonal distributions (perfectly distinguishable)
+
+**Initial interpretation** (fp32 vs int8):
+- n=100: **0.321** → The two distributions are ~32% distinguishable in semantic space
+- n=1000: **0.379** → Increased to ~38% distinguishable with better density matrix estimates
+
+**⚠️ INVALIDATED BY SANITY CHECK**: The fp32 vs fp32 comparison shows essentially identical trace distances (0.332 at n=100, 0.371 at n=1000), meaning these values do **not** reflect actual distribution differences. The metric is measuring artifacts, not signal. See "Critical Finding: Trace Distance Fails Sanity Check" below.
+
+### Von Neumann Divergence
+**What it measures**: Quantum analog of Kullback-Leibler divergence. Measures the information gained when using the true distribution (fp32) versus assuming the approximate distribution (int8).
+
+**Range**: [0, ∞)
+- 0 = Distributions are identical
+- Larger values = More information difference
+
+**Interpretation for our results**:
+- n=100: **0.081** → Modest information divergence
+- n=1000: **0.013** → Surprisingly decreased (likely due to better eigenvalue estimates reducing noise)
+
+**Note**: Unlike trace distance (which is symmetric), Von Neumann divergence is asymmetric. Our implementation may be computing D(ρ_A || ρ_B) where ρ_A is fp32 and ρ_B is int8.
+
+### QRE (Quantum Relative Entropy) Symmetric
+**What it measures**: Symmetrized version of quantum relative entropy, computed as [D(ρ_A || ρ_B) + D(ρ_B || ρ_A)]/2. Provides a symmetric information-theoretic distance.
+
+**Range**: [0, ∞)
+- 0 = Distributions are identical
+- Larger values = More symmetric information divergence
+
+**Interpretation for our results**:
+- n=100: **0.003** → Very small symmetric divergence
+- n=1000: **0.001** → Even smaller (consistent with Von Neumann divergence decrease)
+
+**Why so small?**: These values suggest that while the distributions are distinguishable (per trace distance), the information-theoretic divergence is minimal. This might indicate that fp32 and int8 produce semantically similar outputs with subtle but detectable differences.
+
+### Key Insight (Original - See Revision Below)
+~~**Trace distance captures geometric distinguishability** while **Von Neumann divergence/QRE capture information-theoretic divergence**. In our case:~~
+- ~~High trace distance (0.32-0.38) = Distributions are geometrically separated in embedding space~~
+- ~~Low divergence (0.01-0.08) = Information content is similar despite geometric separation~~
+
+~~This suggests **int8 quantization shifts the semantic distribution subtly but consistently**, rather than producing wildly different content.~~
+
+**⚠️ REVISED AFTER SANITY CHECK**: The high trace distance (0.32-0.38) does NOT indicate geometric separation between fp32 and int8 - it appears consistently even when comparing identical distributions (fp32 vs fp32). The original interpretation was **incorrect**. The metric likely reflects finite-sample artifacts in high-dimensional density matrix estimation rather than actual distribution differences.
+
+---
+
+## Results: n=100 samples
+
+### Quantum Metrics
+- **Trace distance**: 0.320768 (computation time: 7.77s)
+- **Von Neumann divergence**: 0.080570 (0.58s)
+- **QRE (symmetric)**: 0.003272 (0.55s)
+
+### Classical Metrics
+- **MMD (Hamming)**: 0.000380, **p=0.2800** (2.13s)
+- **VADER K-S**: 0.150000 (0.03s)
+
+### Interpretation (n=100) - REVISED
+- **Classical test verdict**: FAIL to reject null hypothesis (p=0.28) - insufficient power to detect subtle quantization effects
+- ~~**Quantum metrics hint**: Trace distance of ~0.32 suggests moderate distinguishability (32% separation)~~
+- ~~**Tension**: Quantum metrics suggest differences that classical test lacks power to detect~~
+
+**⚠️ ORIGINAL INTERPRETATION INCORRECT**: The sanity check reveals that trace distance ~0.32 is **not** detecting a real difference - it shows similar values even for identical distributions (fp32 vs fp32 = 0.332). The "tension" was illusory; the classical test was correct to be cautious.
+
+---
+
+## Results: n=1000 samples
+
+### Quantum Metrics
+- **Trace distance**: 0.379058 (12.22s)
+- **Von Neumann divergence**: 0.013241 (5.79s)
+- **QRE (symmetric)**: 0.001151 (5.95s)
+
+### Classical Metrics
+- **MMD (Hamming)**: 0.000825, **p=0.0100** (148.65s)
+- **VADER K-S**: 0.032000 (0.22s)
+
+### Interpretation (n=1000) - REVISED
+- **Classical test verdict**: REJECT null hypothesis (p=0.01) - distributions are statistically different ✓
+- ~~**Quantum trace distance increased**: 0.321 → 0.379 (more distinguishable with larger sample)~~
+- **MMD p-value dropped**: 0.28 → 0.01 (now has sufficient statistical power) ✓
+
+**⚠️ TRACE DISTANCE FINDING INCORRECT**: The increase to 0.379 is not meaningful since fp32 vs fp32 shows 0.371 - effectively identical. The trace distance increase with sample size appears to be a sampling artifact rather than improved detection.
+
+---
+
+## Sanity Check: fp32 vs fp32 (Same Distribution)
+
+**Critical test**: Compare two independent samples from the **same** distribution to verify metrics correctly identify when distributions are identical.
+
+### Results: n=100 samples (fp32 vs fp32)
+
+**Quantum Metrics:**
+- **Trace distance**: 0.331747 (7.09s)
+- **Von Neumann divergence**: 0.001961 (0.70s)
+- **QRE (symmetric)**: 0.004719 (0.64s)
+
+**Classical Metrics:**
+- **MMD (Hamming)**: -0.001936, **p=0.8100** (2.10s) ✓
+- **VADER K-S**: 0.090000 (0.03s)
+
+### Results: n=1000 samples (fp32 vs fp32)
+
+**Quantum Metrics:**
+- **Trace distance**: 0.371305 (11.98s)
+- **Von Neumann divergence**: 0.008056 (5.65s)
+- **QRE (symmetric)**: 0.000809 (5.87s)
+
+**Classical Metrics:**
+- **MMD (Hamming)**: 0.000038, **p=0.3800** (147.09s) ✓
+- **VADER K-S**: 0.038000 (0.22s)
+
+---
+
+## Critical Finding: Trace Distance Fails Sanity Check
+
+### Side-by-Side Comparison
+
+| Metric | fp32 vs int8<br>(n=100) | fp32 vs fp32<br>(n=100) | fp32 vs int8<br>(n=1000) | fp32 vs fp32<br>(n=1000) |
+|--------|------------|------------|--------------|--------------|
+| **Trace Distance** | 0.321 | **0.332** ❌ | 0.379 | **0.371** ❌ |
+| **Von Neumann Div** | 0.081 | **0.002** ✓ | 0.013 | **0.008** ~ |
+| **QRE Symmetric** | 0.003 | **0.005** ~ | 0.001 | **0.001** ~ |
+| **MMD p-value** | 0.28 | **0.81** ✓ | 0.01 | **0.38** ✓ |
+
+### Interpretation
+
+**Trace distance shows NO discrimination**: The values for comparing different distributions (fp32 vs int8) are essentially identical to comparing the same distribution twice (fp32 vs fp32). This means:
+
+- **At n=100**: 0.321 (different models) vs 0.332 (same model) - sanity check actually shows *higher* distinguishability for identical distributions!
+- **At n=1000**: 0.379 (different models) vs 0.371 (same model) - effectively identical
+
+**What this means**: The high trace distance values (~0.32-0.38) are **NOT detecting the quantization difference**. Instead, they reflect:
+- Finite sample effects in density matrix estimation
+- High dimensionality of embedding space creating artificial separation
+- Methodological artifacts (regularization, eigenvalue truncation)
+
+**Classical MMD passes sanity check perfectly**:
+- fp32 vs fp32: p=0.81 (n=100), p=0.38 (n=1000) - correctly fails to reject null
+- fp32 vs int8: p=0.28 (n=100), p=0.01 (n=1000) - correctly detects difference at n=1000
+
+**Von Neumann divergence shows partial discrimination**: At n=100 it distinguishes well (0.081 vs 0.002), but at n=1000 the values converge (0.013 vs 0.008), suggesting the n=100 difference may have been noise.
+
+### Conclusion
+
+**The initial interpretation was incorrect.** Trace distance is not more sample-efficient than classical tests - it simply produces high values regardless of whether distributions actually differ. The classical MMD test, despite appearing less sensitive initially, was correctly identifying that:
+1. At n=100: insufficient power to detect subtle quantization effects
+2. At n=1000: sufficient power to detect real differences
+3. At all sample sizes: correctly identifies when comparing identical distributions
+
+This is a **negative result** for quantum-inspired metrics in this configuration.
+
+---
+
+## Key Findings (Revised)
+
+### 1. Classical MMD Test Works Correctly
+The MMD test with permutation-based p-values demonstrates proper statistical behavior:
+- **At n=100**: Lacks power to detect subtle quantization (p=0.28), but correctly identifies same-distribution samples (p=0.81)
+- **At n=1000**: Has sufficient power to detect quantization (p=0.01), while still correctly identifying same-distribution samples (p=0.38)
+
+**Test statistic and p-value progression:**
+- fp32 vs int8: (n=100) stat=0.00038, p=0.28 → (n=1000) stat=0.00083, p=0.01
+- fp32 vs fp32: (n=100) stat=-0.00194, p=0.81 → (n=1000) stat=0.00004, p=0.38
+
+This is **textbook statistical testing**: insufficient power at small sample sizes, correct null hypothesis behavior, and increasing power with larger samples.
+
+### 2. Trace Distance Fails to Discriminate ❌
+**The initial hypothesis about sample efficiency was incorrect.** Trace distance produces similar values (~0.32-0.38) regardless of whether comparing:
+- Different distributions (fp32 vs int8)
+- Identical distributions (fp32 vs fp32)
+
+This indicates the metric is measuring **sampling variance and methodological artifacts** rather than actual distribution differences. Possible causes:
+- High-dimensional embedding space creates artificial separation even for identical distributions
+- Finite sample density matrix estimation introduces systematic bias
+- Regularization or eigenvalue truncation may inflate distances
+
+**Verdict**: In its current implementation, trace distance is **not suitable** for hypothesis testing about LLM distribution equality.
+
+### 3. Von Neumann Divergence: Mixed Results
+Shows promise at n=100 (0.081 vs 0.002 distinguishes different vs same distributions), but convergence at n=1000 (0.013 vs 0.008) raises questions about reliability. Requires further investigation.
+
+### 4. Metric Behavior with Increased Sample Size
+
+**Trace distance** (↑): 0.321 → 0.379
+- Increased distinguishability suggests better density matrix estimates
+
+**Von Neumann divergence** (↓): 0.081 → 0.013
+- Counterintuitively decreased - may indicate noise reduction in eigenvalue estimates
+
+**QRE symmetric** (↓): 0.003 → 0.001
+- Also decreased with larger sample
+
+**VADER K-S** (↓): 0.15 → 0.032
+- Sentiment distributions appear more similar - initial n=100 may have had sampling noise
+
+### 5. Computation Time Trade-offs
+
+For n=1000:
+- Quantum trace distance: 12.22s
+- Classical MMD (100 permutations): 148.65s
+
+MMD is slower due to permutation resampling for p-value estimation, but this provides rigorous statistical guarantees that the quantum metrics currently lack. Speed is irrelevant if the metric doesn't work correctly.
+
+---
+
+## Root Cause Analysis: Why Does Trace Distance Fail?
+
+### Hypothesis 1: Curse of Dimensionality
+MPNet embeddings are 768-dimensional. In high-dimensional spaces, random samples from the **same** distribution can appear far apart due to concentration of measure. With n=100 or n=1000 samples in 768-D space, the density matrices may be too sparse to reliably estimate the true distribution geometry.
+
+### Hypothesis 2: Finite Sample Bias
+Empirical density matrices from finite samples have different spectral properties than the true infinite-sample density matrix. This systematic bias may inflate trace distances even between identical distributions.
+
+### Hypothesis 3: Regularization Artifacts
+If the implementation uses regularization (e.g., adding small values to diagonal) or eigenvalue truncation, these could introduce artificial distance even for identical distributions.
+
+### Hypothesis 4: Embedding Model Mismatch
+MPNet was trained on sentence similarity tasks, not on distinguishing subtle quantization effects in LLM outputs. The embedding space may not preserve the relevant structure for this problem.
+
+---
+
+## Validation Tests: Confirming the Root Cause
+
+To isolate whether the issue is implementation bugs vs fundamental limitations, we tested the trace distance implementation on **synthetic data with known ground truth**.
+
+**Script**: `test_trace_distance_validation.py`
+
+### Test Results Summary
+
+| Test | Expected | Observed | Status |
+|------|----------|----------|--------|
+| **Identical distributions** (two samples from N(0,I)) | ≈ 0 | 0.209 | ✗ FAIL |
+| **Orthogonal distributions** (orthogonal subspaces) | ≈ 1 | 0.297 | ✗ FAIL |
+| **Shifted Gaussians** (partial overlap) | 0.1-0.9 | 0.209 | ✓ PASS |
+| **Resampling from same pool** (bootstrap) | < 0.05 | 0.279 | ✗ FAIL |
+
+### Critical Finding: Sample Size Dependence
+
+Testing trace distance on identical distributions (two samples from N(0,I)) as sample size increases:
+
+| n_samples | Trace Distance |
+|-----------|----------------|
+| 50        | 0.146         |
+| 100       | 0.212         |
+| 200       | 0.303         |
+| 500       | 0.467         |
+| 1000      | 0.636         |
+
+**This is catastrophic**: Trace distance **increases** with sample size instead of decreasing. For a valid statistical metric, larger samples should give better approximations to the true distance (which is 0 for identical distributions).
+
+### Root Cause Identified
+
+The issue is not a bug in the trace distance formula (which is mathematically correct), but rather **how empirical Gram matrices are used as density matrices**:
+
+```python
+pip = embeddings @ embeddings.T  # Shape: (N, N) 
+rho = pip / trace(pip)            # Normalize to trace 1
+```
+
+**The fundamental problem**: As N increases:
+1. The Gram matrix size grows (N × N)
+2. The matrix structure changes systematically with N
+3. Simple trace normalization doesn't account for this sample-size dependence
+4. The eigenvalue spectrum depends on N, not just the underlying distribution
+
+**This explains the sanity check failure**:
+- fp32 vs fp32 (n=1000): trace distance = 0.371
+- Synthetic N(0,I) vs N(0,I) (n=1000): trace distance = 0.636
+- Both are measuring the **same artifact**: high trace distance at n=1000 due to Gram matrix structure
+
+### Verdict on Current Implementation
+
+The high trace distances observed in all experiments (fp32 vs int8, fp32 vs fp32, synthetic tests) are **not signal** - they are **systematic artifacts** of treating finite-sample Gram matrices as quantum density matrices without proper normalization.
+
+**The method is mathematically sound in theory but breaks down in practice** because:
+- It doesn't account for the sample-size-dependent structure of empirical Gram matrices
+- Normalization by trace is insufficient to make matrices from different sample sizes comparable
+- The curse of dimensionality (d=768) exacerbates finite-sample effects
+
+---
+
+## Potential Fixes and Alternative Approaches
+
+Despite the negative results, the **original motivation remains valid**: quantum-inspired metrics could provide interpretability beyond binary hypothesis testing. While MMD tells us "distributions differ," quantum metrics might characterize *how* they differ (semantic shifts, diversity changes, information content).
+
+### Approach 1: Fixed-Size Density Matrices via Dimensionality Reduction
+
+**Problem**: Gram matrix size (N × N) grows with sample size, creating sample-dependent artifacts.
+
+**Solution**: Project embeddings to a fixed low-dimensional space before constructing density matrices.
+
+**Method**:
+```python
+# Instead of:
+pip = embeddings @ embeddings.T  # N × N matrix (size depends on N)
+
+# Do:
+pca = PCA(n_components=k)  # Fixed k (e.g., k=50)
+reduced_embeddings = pca.fit_transform(embeddings)  # N × k
+# Then construct k × k covariance matrix (fixed size):
+cov = reduced_embeddings.T @ reduced_embeddings / N
+rho = cov / trace(cov)  # k × k density matrix
+```
+
+**Advantages**:
+- Fixed matrix size (k × k) regardless of sample size N
+- Could make trace distance comparable across different N
+- Reduces curse of dimensionality from d=768 to k=50
+
+**Open questions**:
+- What k should we use? (trade-off: too small loses information, too large reintroduces artifacts)
+- Should we use PCA, UMAP, or random projections?
+- Does this preserve the quantum information-theoretic properties we want?
+
+### Approach 2: Kernel-Based Density Matrix Construction
+
+**Problem**: Inner product matrices don't account for sample size properly.
+
+**Solution**: Use kernel density estimation to construct density matrices in a fixed basis.
+
+**Method**: Define a fixed set of basis states (e.g., cluster centers, random anchors) and compute density matrix elements as kernel similarities between samples and basis states. This decouples matrix size from sample size.
+
+**Advantages**:
+- Fixed matrix size independent of N
+- More principled statistical foundation
+- Could leverage kernel theory from MMD literature
+
+**Disadvantages**:
+- More complex implementation
+- Requires choosing basis (clustering, random sampling, etc.)
+
+### Approach 3: Quantum Fidelity Instead of Trace Distance
+
+**Alternative metric**: Quantum fidelity F(ρ, σ) = Tr(√(√ρ σ √ρ))
+
+**Properties**:
+- F ∈ [0, 1], with F=1 for identical states
+- May have better finite-sample properties than trace distance
+- Related to Bhattacharyya coefficient
+
+**Worth testing**: Does fidelity avoid the sample-size artifacts we see with trace distance?
+
+### Approach 4: Subsampling Normalization
+
+**Problem**: Trace distance grows with N.
+
+**Solution**: Compute trace distance on multiple random subsamples of fixed size and average.
+
+**Method**:
+```python
+distances = []
+for _ in range(B):  # B bootstrap iterations
+    subsample_a = random_sample(embeddings_a, size=n_fixed)
+    subsample_b = random_sample(embeddings_b, size=n_fixed)
+    dist = trace_distance(subsample_a, subsample_b)
+    distances.append(dist)
+return np.mean(distances)
+```
+
+**Advantages**:
+- Forces fixed sample size (controls artifact)
+- Provides variance estimate via bootstrap
+
+**Disadvantages**:
+- Throws away data (inefficient)
+- Computational cost: B × trace_distance calculations
+
+### Approach 5: Different Embedding Models
+
+**Hypothesis**: Maybe MPNet's 768-dimensional space is the problem.
+
+**Alternatives to test**:
+- **Smaller models**: MiniLM (384-D), or even smaller (128-D)
+- **Task-specific models**: Embeddings trained on similar/dissimilar text pairs
+- **Token-level embeddings**: Skip sentence embeddings entirely, work in token space
+
+**Worth testing**: Does the artifact persist with lower-dimensional embeddings?
+
+### Approach 6: Abandon Gram Matrices, Use Distribution Over Embeddings
+
+**Radical rethink**: Don't construct N × N matrices at all.
+
+**Method**: Treat embeddings as samples from a distribution on the unit sphere. Compute quantum metrics using **spectral density functions** or **continuous density operators** rather than discrete Gram matrices.
+
+**This requires**: Quantum information theory for continuous variables (much more complex).
+
+---
+
+## Discussion: Which Approach to Pursue?
+
+### Quick wins to validate feasibility:
+1. **Approach 1 (PCA)**: Easy to implement, should take <1 hour. If this works, it's a major win.
+2. **Approach 5 (smaller embeddings)**: Also easy - just change model name. Tests whether dimensionality is the core issue.
+3. **Approach 3 (fidelity)**: Moderate complexity, tests whether the issue is specific to trace distance.
+
+### If quick wins fail:
+- Likely indicates the **Gram matrix approach is fundamentally incompatible** with statistical distribution testing
+- Should pivot to entirely different quantum-inspired approaches (or acknowledge this path isn't viable)
+
+### Recommended next experiment:
+
+**Test Approach 1 (PCA to fixed k=50) on synthetic data**:
+- If trace distance(N(0,I), N(0,I)) → 0 as N increases: ✓ Fixed the artifact!
+- If trace distance still shows sample-size dependence: ✗ Need deeper rethink
+
+**Then if successful**, test on real data:
+- fp32 vs fp32 should give low distance
+- fp32 vs int8 should give higher distance
+- Different models (Llama vs Mistral) should give even higher distance
+
+---
+
+## Revised Open Questions
+
+1. ~~**Sample efficiency of quantum metrics**~~ - **Answered (negative)**: Trace distance does not discriminate, so sample efficiency is not applicable.
+
+2. **Can trace distance be fixed?**: 
+   - Would dimensionality reduction (PCA, UMAP) before density matrix construction help?
+   - Would different embedding models work better?
+   - Is there a different quantum metric formulation that handles finite samples better?
+
+3. **Von Neumann divergence reliability**: Why does it show discrimination at n=100 but not n=1000? Is this metric usable with proper calibration?
+
+4. **Theoretical guarantees**: Do quantum metrics have any theoretical finite-sample guarantees for distribution testing? Classical kernel tests (like MMD) have well-studied asymptotic properties.
+
+5. **Alternative quantum approaches**: Are there other quantum-inspired metrics (e.g., quantum Jensen-Shannon divergence, fidelity) that might avoid these issues?
+
+6. **Generalization** (now higher priority): Before investing in fixing quantum metrics, test classical MMD on:
+   - Different model pairs (different architectures, not just quantizations)
+   - Different prompt types (coding, reasoning, creative writing)
+   - Different distribution shifts (finetuning, watermarking)
+
+---
+
+## PCA Fix: Implementation and Results
+
+**Implementation:** Created `test_trace_pca_fix.py` and `test_pca_on_llm_data.py`
+
+### Validation on Synthetic Data (✓ SUCCESS)
+
+**Script:** `test_trace_pca_fix.py`
+
+Testing PCA approach (k=50) on synthetic Gaussian data:
+
+| Test | Original | PCA k=50 | Improvement |
+|------|----------|----------|-------------|
+| Identical dists | 0.209 | **0.004** | **53× better** |
+| Sample size trend | 0.15→0.64 ↑ | 0.005→0.002 ↓ | **Fixed!** |
+| Resampling same pool | 0.279 | **0.019** | **15× better** |
+
+**Critical finding:** Sample size dependence **eliminated**. Distance now properly decreases as N increases (0.005 → 0.002).
+
+**Method:**
+```python
+# Instead of: pip = embeddings @ embeddings.T  (N × N, grows with N)
+# Use:
+pca = PCA(n_components=k)  # Fixed k
+reduced = pca.fit_transform(embeddings)  # N × k
+cov = reduced.T @ reduced / N  # k × k covariance
+rho = cov / trace(cov)  # Normalize
+```
+
+### Testing on Real LLM Data (⚠️ PARTIAL SUCCESS)
+
+**Script:** `test_pca_on_llm_data.py` + `test_pca_k_sweep.py`
+
+Testing different k values on Llama-3-8B completions:
+
+| k | fp32 vs fp32 | fp32 vs int8 | Ratio | Note |
+|---|--------------|--------------|-------|------|
+| 5 | 0.076 | 0.081 | 1.07× | **Best ratio** |
+| 10 | 0.077 | 0.073 | 0.95× | Discrimination inverts! |
+| 20 | 0.074 | 0.068 | 0.92× | Gets worse |
+| 50 | 0.069 | 0.065 | 0.94× | Original choice |
+| 100+ | 0.068 | 0.065 | 0.95× | Stable but poor |
+
+**Optimal k=5 results (n=100 samples):**
+
+| Comparison | Trace Distance | vs Baseline |
+|------------|----------------|-------------|
+| fp32 vs fp32 (same) | 0.076 | 1.0× |
+| fp32 vs int8 (quant) | 0.081 | 1.07× |
+| Llama vs Mistral (diff) | 0.121 | 1.59× |
+
+**Status:** ✓ Correct ordering: same < quantization < different models
+
+### Evaluation
+
+**What works:**
+- ✓ Sanity check passes (fp32 vs fp32 gives low, stable values)
+- ✓ Correct monotonic ordering of differences
+- ✓ Sample-size artifact completely eliminated
+- ✓ Computationally fast (~1s for n=100)
+
+**What doesn't work:**
+- ✗ Discrimination is **very weak** (7% difference for quantization, 59% for different models)
+- ✗ Optimal k=5 is extremely aggressive (768D → 5D loses most information)
+- ✗ Higher k (which should preserve more information) **makes discrimination worse**
+  - At k≥10, fp32 vs int8 becomes *lower* than fp32 vs fp32 (inverted!)
+  
+**Why discrimination is weak:**
+
+1. **PCA projects onto max-variance directions** - these capture overall structure common to both distributions, not the *differences* between them
+
+2. **For k=5**: Most signal is noise; we only detect very large differences (different models)
+
+3. **For k>10**: PCA directions mix signal and noise in ways that obscure subtle quantization effects
+
+4. **SBERT embeddings may not encode quantization effects** - MPNet was trained on semantic similarity, not low-level generation differences
+
+### Verdict on PCA Approach
+
+**For detection (hypothesis testing):** ❌ **Not recommended**
+- Discrimination too weak for practical use
+- Classical MMD (p=0.01 for quantization at n=1000) is far superior
+- The 7% effect size at k=5 would require huge samples for statistical power
+
+**For interpretability:** ❓ **Unclear value**
+- Could provide a *relative ordering* of distribution shifts
+- But absolute magnitudes are unreliable (too compressed)
+- Eigenvalue spectra or other features might be more informative
+
+**Conclusion:** PCA fixes the mathematical artifact but reveals a deeper issue: **the embedding space doesn't contain strong enough signals about the distribution differences we care about** (quantization, finetuning, etc.). The quantum trace distance approach works in theory but requires an embedding space where relevant differences are preserved.
+
+---
+
+## Next Steps (Updated After PCA Testing)
+
+**PCA Approach:**
+- [x] **Approach 1: Test PCA dimensionality reduction** - COMPLETED
+  - ✓ Synthetic validation: Fixes sample-size artifact perfectly
+  - ⚠️ Real LLM data: Weak discrimination (7% for quantization at k=5)
+  - ✗ Not viable for detection/hypothesis testing
+  - ❓ Possible value for relative ordering, but unclear practical use
+
+**Remaining quantum approaches to explore:**
+- [ ] **Approach 3: Quantum fidelity** instead of trace distance
+  - May have better finite-sample properties
+  - Test on synthetic suite first, then LLM data if promising
+  
+- [ ] **Approach 5: Different embedding models**
+  - Try smaller models: MiniLM-384D, TinyBERT-128D
+  - Try task-specific models: paraphrase detection, textual entailment
+  - Hypothesis: Current SBERT space doesn't encode quantization/generation differences
+  
+- [ ] **Approach 2: Kernel-based density matrices**
+  - Fixed basis (e.g., k-means cluster centers)
+  - May decouple matrix size from sample size more naturally
+
+**Alternative direction: Abandon quantum metrics for detection, explore interpretability:**
+- [ ] **Eigenvalue spectrum analysis** (even if trace distance fails)
+  - Do eigenvalues reveal diversity, entropy, or structure changes?
+  - Compare spectra for fp32 vs int8, Llama vs Mistral
+  
+- [ ] **Embedding space geometry** without density matrices
+  - Mean shift, covariance change, higher moments
+  - Maximum Mean Discrepancy in feature space (not just Hamming kernel)
+
+**Focus on classical methods (higher priority given quantum metric challenges):**
+- [ ] **Test classical MMD more broadly**: Different models, prompts, shift types
+- [ ] **Sample size calibration for MMD**: Determine minimum n for adequate power
+- [ ] **Kernel selection for MMD**: Can kernel choice reveal *how* distributions differ?
+- [ ] **Combine multiple tests**: MMD + K-S + chi-squared for richer characterization
+
+**Document Status:**
+PCA approach tested and documented. Fixes mathematical artifact but reveals deeper issue: embedding space lacks strong signals for quantization/generation differences. Quantum metrics show limited promise for detection. Future work should either: (1) find better embeddings, (2) pivot to interpretability-only use cases, or (3) focus on classical methods with proven detection power.
