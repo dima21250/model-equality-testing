@@ -48,72 +48,61 @@ Initial Results and Discoveries}
 % TL;DR
 \begin{frame}{TL;DR: Preliminary Results Summary}
 
-\textbf{Goal:} Use quantum-inspired metrics for interpretable LLM distribution characterization
+\textbf{Goal:} Quantum-inspired metrics for interpretable LLM distribution characterization
 
-\vspace{0.5em}
+\vspace{0.3em}
 
-\textbf{What we tried:}
-\begin{itemize}
-  \item Embed completions $\to$ Gram matrix $\to$ density matrix $\to$ quantum metrics
-  \item Trace distance, Von Neumann entropy, quantum relative entropy
-  \item Test on quantization (fp32 vs int8), different models (Llama vs Mistral)
-\end{itemize}
+\textbf{What we tried:} Embeddings $\to$ Gram matrix $\to$ density matrix $\to$ quantum metrics (trace distance, Von Neumann entropy, QRE)
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \textbf{What happened:}
 \begin{enumerate}
-  \item Initial results promising (trace distance = 0.32 for fp32 vs int8)
-  \item \textcolor{darkred}{\textbf{Sanity check failure:}} fp32 vs fp32 also gave 0.33 (identical!)
-  \item \textcolor{darkred}{\textbf{Root cause:}} Sample-size artifacts — distance grows with N
-  \item \textcolor{darkgreen}{\textbf{PCA fix:}} Eliminated artifacts but weak discrimination (7\%)
-  \item \textcolor{darkgreen}{\textbf{Pivot:}} Used semantic embeddings to discover what \emph{doesn't} change
+  \item Initial promising: trace distance = 0.32 for fp32 vs int8
+  \item \textcolor{darkred}{\textbf{Sanity check failure:}} fp32 vs fp32 = 0.33 (same!)
+  \item \textcolor{darkred}{\textbf{Root cause:}} Sample-size artifacts
+  \item \textcolor{darkgreen}{\textbf{PCA fix:}} Artifacts eliminated, but 7\% discrimination
+  \item \textcolor{darkgreen}{\textbf{Pivot:}} Semantic embeddings reveal what doesn't change
 \end{enumerate}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \textbf{Key discoveries:}
 \begin{itemize}
-  \item \textbf{Semantic invariance:} Quantization preserves semantics despite token-level changes
-  \item \textbf{Two-tier framework:} Token-level detection + semantic impact assessment
-  \item \textbf{Language-dependent convergence:} Training corpus matters more than organizational bias
+  \item Semantic invariance: quantization preserves semantics
+  \item Two-tier framework: token-level detection + semantic impact
+  \item Language-dependent convergence: corpus standardization matters
 \end{itemize}
 
 \end{frame}
 
 \begin{frame}{TL;DR: Main Conclusions}
 
-\textbf{For quantum metrics as detection tools:} \textcolor{darkred}{\textbf{Not viable}}
-\begin{itemize}
-  \item Sample-size artifacts difficult to eliminate
-  \item Weaker discrimination than classical MMD
-  \item Embedding space lacks signal for implementation differences
-\end{itemize}
+\textbf{Quantum metrics for detection:} \textcolor{darkred}{\textbf{Not viable}} — sample-size artifacts, weak discrimination, no signal in embedding space
 
-\vspace{0.5em}
+\vspace{0.3em}
 
-\textbf{For semantic embeddings as interpretability tools:} \textcolor{darkgreen}{\textbf{Valuable insight}}
+\textbf{Semantic embeddings for interpretability:} \textcolor{darkgreen}{\textbf{Valuable insight}}
 \begin{itemize}
-  \item Implementation changes (quantization, architecture) preserve semantic content
-  \item Enables two-tier testing: "Did it change?" + "Does it matter?"
+  \item Implementation changes preserve semantics (quantization, architecture)
+  \item Two-tier framework: "Did it change?" + "Does it matter?"
   \item Separation ratios reveal training corpus standardization
 \end{itemize}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
-\textbf{Unexpected finding:} Language-dependent semantic convergence
+\textbf{Unexpected finding:} Language-dependent convergence
 \begin{itemize}
-  \item French: 0.19 (both models use similar canonical sources)
-  \item Spanish: 1.00 (dialectal variation, different corpus choices)
-  \item Pattern NOT explained by training data abundance or organizational bias
+  \item French 0.19 (canonical sources) vs Spanish 1.00 (dialectal variation)
+  \item NOT explained by data abundance or organizational bias
 \end{itemize}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
-\textbf{Practical contribution:} Decision framework for deployment
+\textbf{Practical value:} Deployment decision framework
 \begin{itemize}
   \item Statistical change + semantic preservation = likely safe
-  \item Quantification: fp32 $\to$ int8 detected (p=0.01) but semantics preserved (0.0 separation)
+  \item Example: fp32$\to$int8 detected (p=0.01) + preserved (0.0) = safe
 \end{itemize}
 
 \end{frame}
