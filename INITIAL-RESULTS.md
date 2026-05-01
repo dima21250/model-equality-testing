@@ -1242,3 +1242,147 @@ python experiment1b_model_comparison.py --samples 100 --dataset ultrachat --prom
 4. Explore intermediate levels: syntax, style, factuality (between tokens and semantics)
 
 **What quantum metrics revealed**: Even when they "failed" as detection methods, their consistent behavior across test cases revealed the semantic preservation pattern. The journey to understand why they didn't discriminate led to a more valuable discovery about what does and doesn't change semantically.
+
+---
+
+## Cross-Language Analysis: Training Data and Model Bias
+
+**Date**: 2026-04-30
+
+**Hypothesis**: Semantic convergence might be language-dependent, driven by training data abundance and availability.
+
+### Experimental Design
+
+Tested Llama-3-8B vs Mistral-7B across 5 languages (Wikipedia continuations, n=100, prompts 0-2):
+- English (en) - highest resource
+- German (de) - high resource (Europe)
+- Spanish (es) - high resource (global)
+- French (fr) - high resource (Europe)
+- Russian (ru) - medium resource (Cyrillic)
+
+### Results: Language-Dependent Semantic Divergence
+
+| Language | Script | Separation Ratio | Rank | Interpretation |
+|----------|--------|------------------|------|----------------|
+| **Spanish** | Latin | **1.00** | 1 | Moderate divergence |
+| **German** | Latin | **0.71** | 2 | Slight divergence |
+| English | Latin | 0.40 | 3 | Convergence |
+| Russian | Cyrillic | 0.40 | 3 | Convergence |
+| **French** | Latin | **0.19** | 5 | Strongest convergence |
+
+### Key Findings
+
+1. **Semantic convergence is NOT universal**:
+   - Varies 5× across languages (0.19 → 1.00)
+   - Spanish shows highest divergence (1.00 - approaching threshold)
+   - French shows strongest convergence (0.19 - even more than English tasks)
+
+2. **NOT explained by training data abundance**:
+   - French (0.19): Lowest separation despite being high-resource
+   - Spanish (1.00): Highest separation despite similar resource level to French
+   - English (0.40): Moderate, not lowest
+   - Russian (0.40): Same as English despite lower resources
+
+3. **NOT explained by script**:
+   - Russian (Cyrillic): 0.40 = English (Latin)
+   - Script type doesn't determine convergence
+
+4. **Romance languages show huge variation**:
+   - French vs Spanish: 5× difference (0.19 vs 1.00)
+   - Same language family, opposite patterns
+
+### Interpretation: Model Training Biases
+
+**Hypothesis**: Convergence reflects where models have comparable multilingual training strategies.
+
+**Evidence**:
+- **French (0.19)**: Mistral (French company) likely emphasized French
+  - Both models may converge to French language norms
+  - Mistral's "home language" advantage → Llama adapts similarly
+  
+- **Spanish (1.00)**: Neither model's primary focus
+  - Llama (US/Meta): English-centric training
+  - Mistral (France): French/European-centric training
+  - Spanish gets divergent treatment → models produce different semantic patterns
+  
+- **English (0.40)**: Both models heavily trained on English
+  - Converge to similar English patterns
+  - But not as strong as French (Mistral's advantage)
+
+- **German (0.71)**: European language, moderate divergence
+  - Mistral (European company): Likely strong German training
+  - Llama: Less emphasis → more divergence than French/English
+
+- **Russian (0.40)**: Different script, same pattern as English
+  - Both models treat Russian similarly (neither's specialty)
+  - Converge to similar multilingual strategies
+
+### Implications
+
+1. **Semantic invariance is language-dependent**:
+   - Implementation changes preserve semantics more in some languages
+   - French: Very strong preservation (0.19)
+   - Spanish: Weaker preservation (1.00)
+
+2. **Model selection matters for specific languages**:
+   - For French: Llama vs Mistral largely interchangeable (0.19)
+   - For Spanish: Might see meaningful semantic differences (1.00)
+   - For English/Russian: Moderate interchangeability (0.40)
+
+3. **Training bias detection**:
+   - Cross-language testing reveals which languages each model prioritized
+   - Mistral: French (0.19) > English (0.40) > German (0.71) > Spanish (1.00)
+   - Pattern suggests European focus with French priority
+
+4. **Deployment considerations**:
+   - Quantization safety may be language-dependent
+   - Model swap safety varies by language
+   - Should test semantic preservation per target language
+
+### Comparison with Task Type Variation (English)
+
+| Test Type | Constraint | Separation | Context |
+|-----------|-----------|------------|---------|
+| French Wikipedia | Factual | 0.19 | Lowest - strongest convergence |
+| UltraChat (en) | Open | 0.22 | Very low |
+| HumanEval (en) | Code | 0.26 | Low |
+| English Wikipedia | Factual | 0.40 | Moderate |
+| German Wikipedia | Factual | 0.71 | Higher |
+| Spanish Wikipedia | Factual | 1.00 | Highest - approaching threshold |
+
+**Pattern**: Language variation (0.19 → 1.00) exceeds task type variation (0.22 → 0.40) within English.
+
+### Revised Hypothesis
+
+**Original**: Semantic convergence is universal due to similar training objectives
+
+**Revised**: Semantic convergence strength depends on:
+1. **Language-specific training emphasis** (per model)
+2. **Overlap in multilingual training strategies** (between models)
+3. **Model organizational bias** (Mistral/Europe vs Llama/US)
+
+**Not determined by**:
+- Overall training data abundance
+- Script type (Latin vs Cyrillic)
+- Language family (Romance languages vary 5×)
+
+### Future Directions
+
+1. **Test more model pairs**:
+   - Different model origins (Chinese models, European models)
+   - Expect different language-wise convergence patterns
+
+2. **Quantify training bias**:
+   - Use separation ratios to infer model training priorities
+   - Cross-language profiles reveal organizational/geographic biases
+
+3. **Language-specific deployment guidance**:
+   - Test quantization semantic preservation per language
+   - Establish language-wise thresholds for "safe" model swaps
+
+4. **Extended languages**:
+   - Asian languages (Chinese, Japanese, Korean)
+   - Arabic, Hindi, other major languages
+   - Lower-resource languages
+
+**Status**: Discovery that semantic convergence is language-dependent, likely reflecting model training biases rather than universal properties. Spanish (1.00) approaches meaningful separation threshold; French (0.19) shows strongest convergence. Pattern NOT explained by resource abundance or script type.
