@@ -1,0 +1,631 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% Minimal theme with clean look
+\usetheme{default}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{frametitle}[default][center]
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamercolor{frametitle}{fg=black,bg=white}
+
+% Remove shadows and reduce visual clutter
+\setbeamertemplate{blocks}[default]
+\setbeamertemplate{itemize items}[circle]
+
+% Packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{pifont}
+
+% Colors
+\definecolor{darkblue}{RGB}{0,51,102}
+\definecolor{medblue}{RGB}{51,102,153}
+\definecolor{lightblue}{RGB}{153,204,255}
+\definecolor{darkred}{RGB}{153,0,0}
+\definecolor{darkgreen}{RGB}{0,102,51}
+
+% Custom commands
+\newcommand{\good}{\textcolor{darkgreen}{\ding{51}}}
+\newcommand{\bad}{\textcolor{darkred}{\ding{55}}}
+\newcommand{\maybe}{\textcolor{orange}{!}}
+
+\title{Quantum-Inspired Metrics for LLM Distribution Testing:\\
+Initial Results and Discoveries}
+\author{Model Equality Testing Research}
+\date{\today}
+
+\begin{document}
+
+% Title slide
+\begin{frame}
+\titlepage
+\end{frame}
+
+% Motivation
+\begin{frame}{Motivation: Beyond Binary Detection}
+
+\textbf{Existing capability:} Detect distribution changes with MMD
+\begin{itemize}
+  \item Character-level kernel (Hamming)
+  \item Statistical power, rigorous p-values
+  \item Answer: \emph{"Did the distribution change?"} \good
+\end{itemize}
+
+\vspace{1em}
+
+\textbf{Goal:} Interpretability — understand \emph{how} distributions differ
+\begin{itemize}
+  \item Quantum-inspired metrics (trace distance, Von Neumann entropy)
+  \item Semantic embeddings to capture meaning
+  \item Answer: \emph{"What changed semantically?"}
+\end{itemize}
+
+\end{frame}
+
+% Quantum metrics approach
+\begin{frame}{Quantum-Inspired Approach}
+
+\textbf{Convert LLM outputs to quantum states:}
+
+\begin{enumerate}
+  \item Embed completions using sentence transformers (MPNet, EmbeddingGemma-300M)
+  \item Construct density matrices: $\rho = \frac{1}{N}\sum_i |\psi_i\rangle\langle\psi_i|$
+  \item Compute quantum information metrics:
+  \begin{itemize}
+    \item \textbf{Trace distance}: $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
+    \item \textbf{Von Neumann entropy}: $S(\rho) = -\text{Tr}(\rho \log \rho)$
+    \item \textbf{Quantum relative entropy}: $D(\rho_A || \rho_B) = \text{Tr}(\rho_A \log \rho_A - \rho_A \log \rho_B)$
+  \end{itemize}
+\end{enumerate}
+
+\vspace{0.5em}
+\textbf{Hypothesis:} Quantum metrics provide interpretable characterization beyond p-values
+
+\end{frame}
+
+% Initial results
+\begin{frame}{Initial Results: Promising but Puzzling}
+
+\textbf{Test case:} Llama-3-8B fp32 vs int8 quantization
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{n=100} & \textbf{n=1000} \\
+\midrule
+Trace distance & 0.321 & 0.379 \\
+Von Neumann divergence & 0.081 & 0.013 \\
+QRE (symmetric) & 0.003 & 0.001 \\
+\midrule
+MMD (Hamming) p-value & 0.28 & \textbf{0.01} \good \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Initial interpretation:} Trace distance detects difference (0.32--0.38) where MMD lacks power at n=100
+
+\vspace{0.5em}
+
+\textbf{Problem:} Is trace distance more sample-efficient?
+
+\end{frame}
+
+% Sanity check failure
+\begin{frame}{Critical Finding: Sanity Check Failure}
+
+\textbf{Sanity test:} fp32 vs fp32 (same distribution, two samples)
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metric} & \textbf{fp32 vs int8} & \textbf{fp32 vs fp32} & \textbf{Status} \\
+\midrule
+Trace distance (n=100) & 0.321 & \textbf{0.332} & \bad \\
+Trace distance (n=1000) & 0.379 & \textbf{0.371} & \bad \\
+MMD p-value (n=100) & 0.28 & \textbf{0.81} & \good \\
+MMD p-value (n=1000) & 0.01 & \textbf{0.38} & \good \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+
+\textbf{Conclusion:} Trace distance shows \emph{no discrimination} — identical values for different and same distributions!
+
+\vspace{0.5em}
+
+\textbf{Root cause:} Sample-size artifacts in Gram matrix construction
+
+\end{frame}
+
+% Sample size artifact
+\begin{frame}{Root Cause: Sample-Size Dependence}
+
+\textbf{Validation on synthetic data} (two samples from N(0,I)):
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+\textbf{Sample Size} & \textbf{Trace Distance} \\
+\midrule
+50 & 0.146 \\
+100 & 0.212 \\
+200 & 0.303 \\
+500 & 0.467 \\
+1000 & \textbf{0.636} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Expected:} Distance $\to$ 0 as n increases (better estimates)
+
+\textbf{Observed:} Distance $\to$ 1 as n increases \bad
+
+\vspace{0.5em}
+
+\textbf{Issue:} Gram matrix size (N $\times$ N) grows with sample size, creating systematic bias
+
+\end{frame}
+
+% PCA fix
+\begin{frame}{Attempted Fix: Dimensionality Reduction}
+
+\textbf{Approach:} Project to fixed k dimensions before constructing density matrix
+
+\vspace{0.5em}
+
+\textbf{Synthetic data (N(0,I) vs N(0,I)):}
+\begin{itemize}
+  \item Original: 0.209 distance \bad
+  \item PCA k=50: \textbf{0.004 distance} \good
+  \item Sample-size artifact eliminated! \good
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Real LLM data (fp32 vs int8, n=100):}
+\begin{itemize}
+  \item fp32 vs fp32: 0.076
+  \item fp32 vs int8: 0.081
+  \item Discrimination: 7\% effect size
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Status:} Math fixed, but discrimination too weak for practical use
+
+\textbf{Verdict:} Embedding space lacks signal for quantization effects
+
+\end{frame}
+
+% Pivot to interpretability
+\begin{frame}{Pivot: Semantic Embeddings for Interpretability}
+
+\textbf{Reframing the question:}
+
+\vspace{0.5em}
+
+Why do semantic embeddings fail to separate fp32 vs int8?
+
+$\Rightarrow$ Maybe \emph{semantics are preserved} despite token-level changes!
+
+\vspace{1em}
+
+\textbf{Two-level testing framework:}
+
+\begin{enumerate}
+  \item \textbf{Token-level (MMD Hamming):} Detect implementation changes
+  \begin{itemize}
+    \item Sensitive to exact tokens, word choice, phrasing
+    \item Answer: "Did the distribution change?" (p-value)
+  \end{itemize}
+
+  \vspace{0.5em}
+
+  \item \textbf{Semantic-level (EmbeddingGemma + t-SNE):} Assess meaningful impact
+  \begin{itemize}
+    \item Preserves meaning, discards surface form
+    \item Answer: "Does the change matter semantically?" (separation ratio)
+  \end{itemize}
+\end{enumerate}
+
+\vspace{0.5em}
+
+\textbf{Hypothesis:} Implementation changes can be statistically detectable without being semantically meaningful
+
+\end{frame}
+
+% Semantic invariance results
+\begin{frame}{Discovery: Semantic Invariance Under Implementation Changes}
+
+\textbf{Llama-3-8B vs Mistral-7B comparison} (Wikipedia continuations, n=100):
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Comparison} & \textbf{Token-level (MMD)} & \textbf{Semantic (t-SNE)} \\
+\midrule
+fp32 vs int8 (quant) & p=0.01 (detected) & 0.0 separation \\
+fp32 vs fp32 (sanity) & p=0.38 (correct) & 0.0 separation \\
+Llama vs Mistral (arch) & (not tested) & \textbf{<0.4 separation} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Separation ratio:} (center distance) / (cluster spread), threshold 2.0 for meaningful separation
+
+\vspace{1em}
+
+\textbf{Key finding:} Quantization changes token distributions but preserves semantic content
+
+\textbf{Interpretation:} Both MMD and embeddings are correct — they measure different abstraction levels
+
+\end{frame}
+
+% Task diversity
+\begin{frame}{Task Diversity: Pattern Holds Across Domains}
+
+\textbf{Llama-3-8B vs Mistral-7B across task types:}
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{llc}
+\toprule
+\textbf{Dataset} & \textbf{Task Type} & \textbf{Separation Ratio} \\
+\midrule
+Wikipedia (en) & Factual continuation & 0.40 \\
+HumanEval & Code generation & 0.26 \\
+UltraChat & Conversational & 0.22 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+
+\textbf{Counterintuitive:} More open-ended tasks show \emph{stronger} convergence
+
+\vspace{0.5em}
+
+\textbf{Interpretation:} Different architectures converge to similar semantic strategies regardless of task constraint
+
+\vspace{0.5em}
+
+All ratios $<$ 2.0 threshold $\Rightarrow$ no meaningful semantic separation
+
+\end{frame}
+
+% Cross-language analysis
+\begin{frame}{Cross-Language Analysis: Training Bias Revealed}
+
+\textbf{Hypothesis:} Convergence driven by training data abundance?
+
+\vspace{0.5em}
+
+\textbf{Test:} Llama-3-8B (Meta/US) vs Mistral-7B (Mistral AI/France) across 5 languages
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Language} & \textbf{Separation Ratio} & \textbf{Interpretation} \\
+\midrule
+\textbf{French} & \textbf{0.19} & \textcolor{darkgreen}{Strongest convergence} \\
+English & 0.40 & Moderate \\
+Russian & 0.40 & Moderate \\
+German & 0.71 & Some divergence \\
+\textbf{Spanish} & \textbf{1.00} & \textcolor{darkred}{Highest divergence} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Pattern:} 5$\times$ variation across languages (0.19 $\to$ 1.00)
+
+Language variation $>$ task variation in English!
+
+\end{frame}
+
+% Verbosity hypothesis
+\begin{frame}{Alternative Hypothesis: Linguistic Verbosity?}
+
+\textbf{Question:} Is French convergence due to French being more verbose/constrained?
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Language} & \textbf{Avg Length} & \textbf{Verbosity Rank} & \textbf{Separation} \\
+\midrule
+English & 246.7 chars & 1 (most) & 0.40 \\
+Spanish & 172.2 chars & 2 & \textbf{1.00} \\
+\textbf{French} & \textbf{170.8 chars} & \textbf{3} & \textbf{0.19} \\
+German & 170.0 chars & 4 & 0.71 \\
+Russian & 146.9 chars & 5 (least) & 0.40 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Correlation:} -0.141 (essentially none)
+
+\vspace{0.5em}
+
+\textbf{Spanish vs French:} Nearly identical verbosity (172 vs 171 chars), opposite convergence patterns (1.00 vs 0.19)
+
+\vspace{0.5em}
+
+\textbf{Verdict:} \bad\ Verbosity does not predict convergence
+
+\end{frame}
+
+% Training data convergence
+\begin{frame}{The Spanish Paradox: Length $\neq$ Semantic Convergence}
+
+\textbf{Per-model analysis reveals both invested in French:}
+
+\vspace{0.5em}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Language} & \textbf{Llama std} & \textbf{Mistral std} & \textbf{Separation} \\
+\midrule
+\textbf{French} & \textbf{14.3} (lowest!) & 21.0 & 0.19 \\
+Spanish & 13.5 & 21.6 & \textbf{1.00} \\
+Russian & 21.3 & 17.7 & 0.40 \\
+English & 50.7 & 33.0 & 0.40 \\
+German & 23.2 & 32.7 & 0.71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Key observations:}
+\begin{itemize}
+  \item Llama's French std (14.3) is lowest across \emph{all} languages — even lower than English!
+  \item Mistral's French std 20\% lower than other languages
+  \item Both models show French optimization \good
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{The paradox:} Spanish and French have similar std (13.5 vs 14.3) but opposite convergence (1.00 vs 0.19)
+
+\end{frame}
+
+% Refined hypothesis
+\begin{frame}{Refined Hypothesis: Training Data Convergence}
+
+\textbf{Why French converges (0.19):}
+\begin{itemize}
+  \item Both companies used similar \emph{canonical sources}
+  \item French Wikipedia, standardized literature
+  \item Parisian French dominates formal writing (homogeneous)
+  \item Strategic importance: 300M speakers, EU operations
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Why Spanish diverges (1.00):}
+\begin{itemize}
+  \item \emph{Dialectal variation}: Spain vs Mexico vs Argentina vs Colombia
+  \item Models made different regional/dialectal choices
+  \item No single dominant variant in training corpora
+  \item Produce similar-length text (172 chars) but different semantic styles
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Revised framework:}
+
+High convergence $\Rightarrow$ models used similar canonical sources
+
+High divergence $\Rightarrow$ models made different corpus/dialect choices
+
+\vspace{0.5em}
+
+\textbf{Pattern:} Separation ratios reveal \emph{training corpus standardization}, not just organizational bias
+
+\end{frame}
+
+% Decision framework
+\begin{frame}{Practical Framework: Two-Tier Distribution Testing}
+
+\begin{center}
+\begin{tabular}{cccl}
+\toprule
+\textbf{Statistical} & \textbf{Semantic} & \textbf{Interpretation} & \textbf{Action} \\
+\midrule
+No change & — & Identical distributions & \good\ Safe \\
+Changed & Preserved & Implementation shift & \good\ Likely safe \\
+Changed & Changed & Meaningful shift & \maybe\ Investigate \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+
+\textbf{Example application:}
+\begin{itemize}
+  \item \textbf{Quantization (fp32 $\to$ int8):} Statistical change + semantic preservation
+  \begin{itemize}
+    \item MMD p=0.01 (detected) + separation 0.0 (preserved)
+    \item \good\ Deploy with confidence
+  \end{itemize}
+
+  \vspace{0.5em}
+
+  \item \textbf{Model swap (Llama $\to$ Mistral):}
+  \begin{itemize}
+    \item French: separation 0.19 $\Rightarrow$ \good\ Interchangeable
+    \item Spanish: separation 1.00 $\Rightarrow$ \maybe\ Test which dialect matches use case
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+% Key findings summary
+\begin{frame}{Summary: Key Findings}
+
+\textbf{1. Quantum metrics for detection:} \bad\ Not viable
+\begin{itemize}
+  \item Trace distance fails sanity checks (sample-size artifacts)
+  \item PCA fix weakens discrimination (7\% effect)
+  \item Classical MMD superior for statistical testing
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{2. Semantic embeddings reveal invariance:} \good\ Valuable insight
+\begin{itemize}
+  \item Implementation changes preserve semantic content
+  \item Quantization (fp32 vs int8): detected but semantics preserved
+  \item Architecture (Llama vs Mistral): semantic convergence across tasks
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{3. Language-dependent convergence:} \good\ Training corpus insight
+\begin{itemize}
+  \item 5$\times$ variation across languages (French 0.19 $\to$ Spanish 1.00)
+  \item Both models optimized French using similar canonical sources
+  \item Spanish divergence driven by dialectal variation in training
+  \item Separation ratios reveal corpus standardization
+\end{itemize}
+
+\end{frame}
+
+% Methodological contributions
+\begin{frame}{Methodological Contributions}
+
+\textbf{1. Two-level testing framework validated:}
+\begin{itemize}
+  \item Token-level (MMD): Statistical detection with p-values
+  \item Semantic-level (embeddings): Impact assessment with separation ratios
+  \item Provides both "did it change?" and "does it matter?" answers
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{2. Separation ratios as training corpus diagnostics:}
+\begin{itemize}
+  \item Low ratios $\Rightarrow$ similar canonical sources (French 0.19)
+  \item High ratios $\Rightarrow$ different corpus/dialect choices (Spanish 1.00)
+  \item Cross-language profiles reveal organizational priorities
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{3. Negative results have value:}
+\begin{itemize}
+  \item Quantum metrics "failure" revealed semantic preservation
+  \item Journey to understand why they didn't discriminate led to insights
+  \item Both MMD and embeddings correct — different abstraction levels
+\end{itemize}
+
+\end{frame}
+
+% Future work
+\begin{frame}{Future Directions}
+
+\textbf{1. Validate organizational bias hypothesis:}
+\begin{itemize}
+  \item Compare two French models (expect low French separation)
+  \item Compare two US models (expect low English separation)
+  \item Compare Chinese models on Chinese vs English
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{2. Dialectal variation analysis:}
+\begin{itemize}
+  \item Identify which Spanish variant each model prefers
+  \item Test Arabic (MSA vs Egyptian vs Gulf)
+  \item Portuguese (Brazil vs Portugal)
+  \item Chinese (Simplified vs Traditional)
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{3. Extend to other distribution shifts:}
+\begin{itemize}
+  \item Watermarking: semantic preservation?
+  \item Fine-tuning: which dimensions change?
+  \item Prompt sensitivity: semantic stability?
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{4. Decision framework validation:}
+\begin{itemize}
+  \item Establish separation ratio thresholds
+  \item User studies: does semantic preservation predict user perception?
+\end{itemize}
+
+\end{frame}
+
+% Conclusion
+\begin{frame}{Conclusions}
+
+\textbf{Original goal:} Use quantum metrics for interpretable LLM distribution characterization
+
+\vspace{0.5em}
+
+\textbf{What we learned:}
+
+\begin{enumerate}
+  \item Quantum metrics don't improve on classical methods for \emph{detection}
+  \begin{itemize}
+    \item Sample-size artifacts difficult to eliminate
+    \item Embedding space issues fundamental
+  \end{itemize}
+
+  \vspace{0.5em}
+
+  \item Semantic embeddings reveal \emph{what doesn't change}
+  \begin{itemize}
+    \item Implementation differences preserve semantic content
+    \item Two-level framework: detection + impact assessment
+  \end{itemize}
+
+  \vspace{0.5em}
+
+  \item Cross-language analysis reveals training strategies
+  \begin{itemize}
+    \item Convergence reflects corpus standardization
+    \item Divergence reflects dialectal choices
+    \item Separation ratios diagnostic tool
+  \end{itemize}
+\end{enumerate}
+
+\vspace{0.5em}
+
+\textbf{Practical value:} Framework for deployment decisions (quantization safety, model selection)
+
+\end{frame}
+
+\end{document}
