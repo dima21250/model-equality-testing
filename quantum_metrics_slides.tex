@@ -1193,6 +1193,130 @@ When comparing two identical distributions:
 
 \end{frame}
 
+\begin{frame}{Appendix: The Density Matrix — Bridge from Embeddings to Metrics}
+
+\textbf{Question:} We compute the Gram matrix, then the density matrix — but what do we DO with the density matrix?
+
+\vspace{0.5em}
+
+\textbf{Answer:} The density matrix is an \emph{intermediate representation} that enables quantum metrics
+
+\vspace{0.5em}
+
+\textbf{The complete pipeline:}
+
+\vspace{0.3em}
+
+\begin{center}
+\fbox{\parbox{0.85\textwidth}{
+\centering
+N completion embeddings (vectors)
+
+$\downarrow$
+
+Gram matrix: $G_{ij} = \langle \psi_i | \psi_j \rangle$ \quad (N $\times$ N similarities)
+
+$\downarrow$
+
+Density matrix: $\rho = \frac{1}{N}G$ \quad (normalized representation)
+
+$\downarrow$
+
+Quantum metrics: $D(\rho_A, \rho_B)$, $S(\rho)$ \quad (scalar outputs)
+}}
+\end{center}
+
+\vspace{0.5em}
+
+\textbf{Role of each step:}
+\begin{itemize}
+  \item \textbf{Embeddings}: Raw high-dimensional vectors (768-D)
+  \item \textbf{Gram matrix}: Pairwise similarities (N $\times$ N, unnormalized)
+  \item \textbf{Density matrix}: Normalized probabilistic representation
+  \item \textbf{Metrics}: Operations on the density matrix to quantify differences
+\end{itemize}
+
+\vspace{0.3em}
+
+\textbf{Key point:} We don't analyze the density matrix directly — it's the \emph{input} to quantum metric calculations
+
+\end{frame}
+
+\begin{frame}{Appendix: Why the Normalization Step Matters}
+
+\textbf{Gram matrix G vs Density matrix $\rho = \frac{1}{N}G$}
+
+\vspace{0.5em}
+
+\textbf{Without normalization (just use G):}
+\begin{itemize}
+  \item \bad\ Trace depends on sample size: $\text{Tr}(G) = N$ (sum of N ones on diagonal)
+  \item \bad\ Can't compare different sample sizes
+  \item \bad\ No probabilistic interpretation
+  \item \bad\ Quantum metrics require $\text{Tr}(\rho) = 1$
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{With normalization ($\rho = \frac{1}{N}G$):}
+\begin{itemize}
+  \item \good\ Trace normalized: $\text{Tr}(\rho) = \frac{1}{N} \text{Tr}(G) = \frac{1}{N} \cdot N = 1$
+  \item \good\ Valid quantum state (Hermitian, positive semi-definite, unit trace)
+  \item \good\ Probabilistic interpretation: $\rho$ represents probability distribution
+  \item \good\ Can apply quantum information theory with theoretical guarantees
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Analogy:}
+\begin{itemize}
+  \item Gram matrix = raw counts
+  \item Density matrix = normalized probability distribution
+  \item Quantum metrics = statistical tests on that distribution
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Appendix: What We Actually Compute}
+
+\textbf{Concrete example:} Comparing fp32 vs int8 quantization (n=100 each)
+
+\vspace{0.5em}
+
+\textbf{Step 1:} Get 100 completions from fp32 model, embed with MPNet
+$$\mathbf{x}_1^{(A)}, \ldots, \mathbf{x}_{100}^{(A)} \in \mathbb{R}^{768}$$
+
+\textbf{Step 2:} Normalize and build Gram matrix $G_A$ (100 $\times$ 100)
+
+\textbf{Step 3:} Density matrix: $\rho_A = \frac{1}{100} G_A$
+
+\textbf{Step 4:} Repeat for int8 model $\to$ $\rho_B$
+
+\vspace{0.5em}
+
+\textbf{Step 5:} Compute metrics (operations ON $\rho_A$ and $\rho_B$):
+
+\begin{itemize}
+  \item \textbf{Trace distance:} $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
+  \begin{itemize}
+    \item Compute difference: $\Delta = \rho_A - \rho_B$
+    \item Eigendecompose: find eigenvalues of $\Delta$
+    \item Take absolute values, sum, multiply by $\frac{1}{2}$
+  \end{itemize}
+
+  \item \textbf{Von Neumann entropy:} $S(\rho_A) = -\text{Tr}(\rho_A \log \rho_A)$
+  \begin{itemize}
+    \item Eigendecompose $\rho_A$: get $\lambda_1, \ldots, \lambda_{100}$
+    \item Compute: $-\sum_i \lambda_i \log \lambda_i$
+  \end{itemize}
+\end{itemize}
+
+\vspace{0.3em}
+
+\textbf{Output:} Scalar numbers (0.321, 0.081, etc.) quantifying differences
+
+\end{frame}
+
 \begin{frame}{Appendix: Summary — Gram Matrix}
 
 \textbf{What is a Gram matrix?} Matrix of all pairwise inner products
