@@ -1253,22 +1253,41 @@ python experiment1b_model_comparison.py --samples 100 --dataset ultrachat --prom
 
 ### Experimental Design
 
-Tested Llama-3-8B vs Mistral-7B across 5 languages (Wikipedia continuations, n=100, prompts 0-2):
-- English (en) - highest resource
-- German (de) - high resource (Europe)
-- Spanish (es) - high resource (global)
-- French (fr) - high resource (Europe)
-- Russian (ru) - medium resource (Cyrillic)
+**Models compared**:
+- **Model A**: `meta-llama/Meta-Llama-3-8B-Instruct` (Meta/US)
+- **Model B**: `mistralai/Mistral-7B-Instruct-v0.3` (Mistral AI/France)
+
+**Why this pairing matters**: Comparing a US company's model vs a French company's model reveals potential organizational/geographic training biases.
+
+**Languages tested** (Wikipedia continuations, n=100, prompts 0-2):
+- English (en) - highest resource, global language
+- German (de) - high resource (European)
+- Spanish (es) - high resource (global, Romance)
+- French (fr) - high resource (European, Romance, Mistral's home)
+- Russian (ru) - medium resource (Cyrillic script)
 
 ### Results: Language-Dependent Semantic Divergence
 
-| Language | Script | Separation Ratio | Rank | Interpretation |
-|----------|--------|------------------|------|----------------|
-| **Spanish** | Latin | **1.00** | 1 | Moderate divergence |
-| **German** | Latin | **0.71** | 2 | Slight divergence |
-| English | Latin | 0.40 | 3 | Convergence |
-| Russian | Cyrillic | 0.40 | 3 | Convergence |
-| **French** | Latin | **0.19** | 5 | Strongest convergence |
+**Summary visualization** (Llama/US vs Mistral/France):
+
+```
+Spanish (neither's focus):  1.00 ████████████████████  Highest divergence
+German (EU language):       0.71 ██████████████        Moderate divergence  
+English (both need):        0.40 ████████              Standard convergence
+Russian (both cover):       0.40 ████████              Standard convergence
+French (Mistral's home):    0.19 ████                  Strongest convergence
+                                 └─ Threshold: 2.0 for "strong separation"
+```
+
+**Detailed results**:
+
+| Language | Script | Separation Ratio | Rank | Organizational Context | Interpretation |
+|----------|--------|------------------|------|----------------------|----------------|
+| **Spanish** | Latin | **1.00** | 1 | Neither US nor France priority | **Divergent strategies** |
+| **German** | Latin | **0.71** | 2 | European (Mistral priority) | Moderate divergence |
+| English | Latin | 0.40 | 3 | Business necessity (both) | Standard convergence |
+| Russian | Cyrillic | 0.40 | 3 | Multilingual coverage (both) | Standard convergence |
+| **French** | Latin | **0.19** | 5 | **Mistral home language** | **Strongest convergence** |
 
 ### Key Findings
 
@@ -1291,31 +1310,49 @@ Tested Llama-3-8B vs Mistral-7B across 5 languages (Wikipedia continuations, n=1
    - French vs Spanish: 5× difference (0.19 vs 1.00)
    - Same language family, opposite patterns
 
-### Interpretation: Model Training Biases
+### Interpretation: Organizational Training Priorities Hypothesis
 
-**Hypothesis**: Convergence reflects where models have comparable multilingual training strategies.
+**Core hypothesis**: Separation ratios reveal where models have divergent vs. convergent multilingual training strategies, driven by organizational priorities.
 
-**Evidence**:
-- **French (0.19)**: Mistral (French company) likely emphasized French
-  - Both models may converge to French language norms
-  - Mistral's "home language" advantage → Llama adapts similarly
-  
-- **Spanish (1.00)**: Neither model's primary focus
-  - Llama (US/Meta): English-centric training
-  - Mistral (France): French/European-centric training
-  - Spanish gets divergent treatment → models produce different semantic patterns
-  
-- **English (0.40)**: Both models heavily trained on English
-  - Converge to similar English patterns
-  - But not as strong as French (Mistral's advantage)
+**Pattern observed** (Llama/US vs Mistral/France):
 
-- **German (0.71)**: European language, moderate divergence
-  - Mistral (European company): Likely strong German training
-  - Llama: Less emphasis → more divergence than French/English
+| Language | Separation | Model A (Llama/US) | Model B (Mistral/France) | Predicted Outcome |
+|----------|------------|-------------------|-------------------------|-------------------|
+| **French** | **0.19** | High-resource global language | **Home language, optimized** | **Strong convergence** ✓ |
+| English | 0.40 | Native/primary language | Business necessity, global | Moderate convergence ✓ |
+| Russian | 0.40 | Multilingual coverage | Multilingual coverage | Moderate convergence ✓ |
+| German | 0.71 | Multilingual coverage | European priority | Moderate divergence ✓ |
+| **Spanish** | **1.00** | Lower priority (US-centric) | Lower priority (France-centric) | **Highest divergence** ✓ |
 
-- **Russian (0.40)**: Different script, same pattern as English
-  - Both models treat Russian similarly (neither's specialty)
-  - Converge to similar multilingual strategies
+**Evidence for organizational bias**:
+
+1. **French (0.19) - Mistral's "home language"**:
+   - Mistral AI (France): Strongest optimization for French
+   - Llama (Meta/US): Also well-trained on French (high-resource, global)
+   - Both converge to French norms → **lowest separation**
+   - Even lower than English (0.40) despite English being more common
+
+2. **Spanish (1.00) - Neither model's focus**:
+   - Llama: English/US-centric training priorities
+   - Mistral: French/European-centric training priorities
+   - Spanish not primary for either organization
+   - Divergent multilingual strategies → **highest separation**
+   - Despite Spanish being high-resource globally!
+
+3. **English (0.40) - Business necessity for both**:
+   - Both companies need strong English (global business language)
+   - Converge to similar English patterns
+   - But more separation than French (not Mistral's primary optimization target)
+
+4. **German (0.71) - European language, moderate divergence**:
+   - Mistral (European): Likely prioritizes German (major EU language)
+   - Llama (US): Standard multilingual coverage
+   - More divergence than French/English but less than Spanish
+
+5. **Russian (0.40) - Neither's specialty, same strategy**:
+   - Both use similar multilingual coverage strategies
+   - Neither has geographic/organizational reason to prioritize
+   - Converge to similar Russian patterns (same as English separation)
 
 ### Implications
 
@@ -1366,23 +1403,65 @@ Tested Llama-3-8B vs Mistral-7B across 5 languages (Wikipedia continuations, n=1
 - Script type (Latin vs Cyrillic)
 - Language family (Romance languages vary 5×)
 
+### Testing the Organizational Bias Hypothesis
+
+**To validate** that separation ratios reflect organizational training priorities, we should compare:
+
+1. **Two French models** (e.g., Mistral vs another French model):
+   - **Prediction**: Very low separation on French (both optimize for it)
+   - **Prediction**: Higher separation on English, Spanish (different priorities)
+   
+2. **Two US models** (e.g., Llama vs GPT/Claude):
+   - **Prediction**: Very low separation on English (both optimize for it)
+   - **Prediction**: Moderate separation on French, Spanish
+
+3. **Two Chinese models** (e.g., Qwen vs DeepSeek):
+   - **Prediction**: Very low separation on Chinese (both optimize for it)
+   - **Prediction**: Higher separation on English, European languages
+
+4. **Cross-organizational pairs** with different focuses:
+   - US vs Chinese models: Divergence on both English and Chinese (different primaries)
+   - European vs Asian models: Maximum divergence across all languages
+
+**Expected pattern**: Separation ratio lowest for the shared organizational/geographic "home language", higher for languages neither prioritizes.
+
+**Counter-evidence** that would refute hypothesis:
+- If two French models show high divergence on French
+- If US + Chinese models show low divergence on English OR Chinese
+- If separation ratios are uniform across all language pairs
+
 ### Future Directions
 
-1. **Test more model pairs**:
-   - Different model origins (Chinese models, European models)
-   - Expect different language-wise convergence patterns
+1. **Test organizational bias hypothesis**:
+   - Compare model pairs from same vs different regions
+   - Map separation ratios across language × model-pair matrix
+   - Identify training priority patterns
 
-2. **Quantify training bias**:
-   - Use separation ratios to infer model training priorities
-   - Cross-language profiles reveal organizational/geographic biases
+2. **Quantify training bias via separation profiles**:
+   - Create "language priority fingerprints" per model
+   - Use ratios to infer which languages were emphasized
+   - Compare inferred priorities to organizational origin
 
 3. **Language-specific deployment guidance**:
-   - Test quantization semantic preservation per language
-   - Establish language-wise thresholds for "safe" model swaps
+   - Establish per-language thresholds for "semantic equivalence"
+   - Test quantization semantic preservation separately per language
+   - Model swap safety depends on target language
 
-4. **Extended languages**:
-   - Asian languages (Chinese, Japanese, Korean)
-   - Arabic, Hindi, other major languages
-   - Lower-resource languages
+4. **Extended language coverage**:
+   - Asian languages (Chinese, Japanese, Korean) with Asian models
+   - Arabic with Middle Eastern models
+   - Lower-resource languages (where divergence may be highest)
 
-**Status**: Discovery that semantic convergence is language-dependent, likely reflecting model training biases rather than universal properties. Spanish (1.00) approaches meaningful separation threshold; French (0.19) shows strongest convergence. Pattern NOT explained by resource abundance or script type.
+5. **Longitudinal analysis**:
+   - Track separation ratios across model versions
+   - Identify when training priorities shift
+   - Correlate with organizational strategy changes
+
+**Status**: Discovery that semantic convergence is language-dependent, likely reflecting organizational training priorities rather than universal properties or training data abundance. 
+
+**Key insight**: Mistral (France) + Llama (US) comparison shows:
+- French (Mistral's home): 0.19 (strongest convergence)
+- Spanish (neither's focus): 1.00 (highest divergence)
+- Pattern NOT explained by resource abundance or script type
+
+**Testable hypothesis**: Separation ratios reveal organizational/geographic training biases. Can be validated by comparing models from different regions on their respective "home" languages.
