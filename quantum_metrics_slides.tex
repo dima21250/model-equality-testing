@@ -69,21 +69,140 @@ Initial Results and Discoveries}
 % Quantum metrics approach
 \begin{frame}{Quantum-Inspired Approach}
 
-\textbf{Convert LLM outputs to quantum states:}
+\textbf{Core idea:} Represent distribution of LLM outputs as quantum state
+
+\vspace{0.5em}
+
+\textbf{From completions to density matrices:}
+\begin{enumerate}
+  \item Start with N completions from model (text strings)
+  \item Embed each completion: $\mathbf{x}_i \in \mathbb{R}^{768}$ (using MPNet or EmbeddingGemma)
+  \item Normalize: $\psi_i = \mathbf{x}_i / ||\mathbf{x}_i||$ (unit vectors on sphere)
+  \item Construct Gram matrix: $G_{ij} = \langle \psi_i | \psi_j \rangle$ (similarity between samples)
+  \item Density matrix: $\rho = \frac{1}{N} G$ (normalized to unit trace)
+\end{enumerate}
+
+\vspace{0.5em}
+
+\textbf{What the density matrix captures:}
+\begin{itemize}
+  \item Diagonal: individual sample "energies"
+  \item Off-diagonal: correlations/overlaps between samples
+  \item Eigenvalues: principal semantic dimensions
+  \item Trace = 1 (normalization), Hermitian, positive semi-definite
+\end{itemize}
+
+\end{frame}
+
+% Why quantum
+\begin{frame}{Why Quantum Formalism?}
+
+\textbf{Classical probability} (single distribution):
+\begin{itemize}
+  \item Represented by probability vector: $\mathbf{p} = (p_1, p_2, \ldots, p_k)$
+  \item Events are mutually exclusive (one outcome at a time)
+  \item No notion of "superposition" or "interference"
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Quantum probability} (density matrix formalism):
+\begin{itemize}
+  \item Represented by density matrix: $\rho \in \mathbb{C}^{d \times d}$
+  \item Captures correlations and "coherence" between states
+  \item Natural geometric structure (Hilbert space)
+  \item Rich set of information-theoretic metrics
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Analogy:} Classical treats samples as points; quantum treats them as overlapping waves
+
+\vspace{0.5em}
+
+\textbf{Hypothesis:} Semantic embeddings have wave-like structure (overlaps matter)
+\begin{itemize}
+  \item Quantum metrics might capture subtle correlations
+  \item Classical p-values miss geometric relationships
+\end{itemize}
+
+\end{frame}
+
+% What the metrics mean
+\begin{frame}{What Do the Quantum Metrics Mean?}
+
+\textbf{1. Trace Distance} $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
+\begin{itemize}
+  \item \textbf{Range:} [0, 1]
+  \item \textbf{Intuition:} Maximum probability of distinguishing two distributions
+  \item 0 = identical distributions (indistinguishable)
+  \item 1 = orthogonal distributions (perfectly separable)
+  \item \textbf{Geometric:} Distance in the space of quantum states
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{2. Von Neumann Entropy} $S(\rho) = -\text{Tr}(\rho \log \rho)$
+\begin{itemize}
+  \item \textbf{Range:} [0, $\log d$] where $d$ is embedding dimension
+  \item \textbf{Intuition:} Diversity/uncertainty of the distribution
+  \item Low entropy = outputs cluster tightly (deterministic)
+  \item High entropy = outputs spread broadly (diverse)
+  \item \textbf{Interpretability:} Does quantization reduce diversity?
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{3. Quantum Relative Entropy} $D(\rho_A || \rho_B) = \text{Tr}(\rho_A \log \rho_A - \rho_A \log \rho_B)$
+\begin{itemize}
+  \item \textbf{Range:} [0, $\infty$)
+  \item \textbf{Intuition:} Information divergence (quantum KL divergence)
+  \item Measures information gained when using true dist. $\rho_A$ vs approximate $\rho_B$
+  \item \textbf{Asymmetric:} $D(\rho_A || \rho_B) \neq D(\rho_B || \rho_A)$
+  \item \textbf{Interpretability:} Information content shift from implementation change
+\end{itemize}
+
+\end{frame}
+
+% Why we thought it would work
+\begin{frame}{Why We Expected This to Work}
+
+\textbf{Hypothesis:} Quantum metrics capture semantic structure classical tests miss
+
+\vspace{0.5em}
+
+\textbf{Expected advantages:}
 
 \begin{enumerate}
-  \item Embed completions using sentence transformers (MPNet, EmbeddingGemma-300M)
-  \item Construct density matrices: $\rho = \frac{1}{N}\sum_i |\psi_i\rangle\langle\psi_i|$
-  \item Compute quantum information metrics:
+  \item \textbf{Geometric interpretability}
   \begin{itemize}
-    \item \textbf{Trace distance}: $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
-    \item \textbf{Von Neumann entropy}: $S(\rho) = -\text{Tr}(\rho \log \rho)$
-    \item \textbf{Quantum relative entropy}: $D(\rho_A || \rho_B) = \text{Tr}(\rho_A \log \rho_A - \rho_A \log \rho_B)$
+    \item Trace distance: magnitude of shift
+    \item Entropy: diversity changes
+    \item Relative entropy: information gained/lost
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Sample efficiency}
+  \begin{itemize}
+    \item Density matrix captures correlations
+    \item Might detect subtle shifts with fewer samples
+    \item Initial results seemed promising (0.32 distance at n=100)
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Characterization beyond detection}
+  \begin{itemize}
+    \item Not just "distributions differ" but \emph{how} they differ
+    \item Eigenvalue spectrum reveals structure
+    \item Direction of change in semantic space
   \end{itemize}
 \end{enumerate}
 
 \vspace{0.5em}
-\textbf{Hypothesis:} Quantum metrics provide interpretable characterization beyond p-values
+
+\textbf{Reality check:} Sanity tests revealed fundamental issues...
 
 \end{frame}
 
