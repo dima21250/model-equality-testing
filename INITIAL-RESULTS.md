@@ -595,3 +595,203 @@ Testing different k values on Llama-3-8B completions:
 
 **Document Status:**
 PCA approach tested and documented. Fixes mathematical artifact but reveals deeper issue: embedding space lacks strong signals for quantization/generation differences. Quantum metrics show limited promise for detection. Future work should either: (1) find better embeddings, (2) pivot to interpretability-only use cases, or (3) focus on classical methods with proven detection power.
+
+---
+
+## Pivot to Interpretability: Gemma 4 31B Embeddings
+
+**Date**: 2026-05-01
+
+### Reframing the Goal
+
+**Detection is solved**: MMD with Hamming kernel successfully detects distribution differences (p=0.01 for quantization at n=1000).
+
+**New goal**: **Interpretability** - Understand *how* distributions differ semantically:
+- What changed between fp32 and int8?
+- Did quantization reduce diversity, coherence, or factuality?
+- Which semantic dimensions shifted between model architectures?
+- Can we characterize watermarking effects semantically?
+
+**Key insight**: For interpretability, we *want* high-level semantic abstractions. The fact that MPNet "collapses" surface variations is a feature, not a bug - it lets us focus on meaningful semantic changes.
+
+### Why MPNet Failed vs Why Gemma 4 31B Might Succeed
+
+**MPNet (all-mpnet-base-v2) limitations**:
+- 110M parameters, 768-D embeddings
+- Trained on sentence similarity (paraphrase detection, semantic textual similarity)
+- Optimized to make semantically similar texts identical
+- **Result**: Collapsed quantization effects we wanted to detect
+
+**Gemma 4 31B potential advantages**:
+- 31B parameters (281× larger)
+- Richer training corpus (vast general text vs sentence pairs)
+- Higher dimensional embeddings (likely 2048+)
+- Broader semantic coverage beyond paraphrase detection
+
+**Hypothesis**: If quantization affects semantics (coherence, style, diversity), Gemma embeddings might encode these shifts where MPNet doesn't.
+
+### Why This Approach Makes Sense
+
+**For detection**: Character-level features (MMD Hamming) are optimal
+- Preserve low-level distribution differences
+- Don't abstract away signal
+
+**For interpretability**: Semantic features are optimal
+- Abstract away noise to reveal meaningful patterns
+- Enable human-interpretable characterization
+- Quantum metrics provide principled framework for measuring semantic shifts
+
+**The approaches are complementary**:
+1. **MMD (Hamming)**: "Distributions differ, p<0.001" ✓
+2. **Quantum metrics (Gemma embeddings)**: "15% semantic shift along axis of decreased diversity"
+
+### Proposed Experiments
+
+#### Experiment 1: Quick Sanity Check (t-SNE/UMAP Visualization)
+
+**Goal**: Do Gemma embeddings separate fp32 vs int8?
+
+```python
+# Embed with Gemma 4 31B
+embeddings_fp32 = embed_with_gemma(samples_fp32)
+embeddings_int8 = embed_with_gemma(samples_int8)
+
+# Reduce to 2D for visualization
+from sklearn.manifold import TSNE
+combined = np.vstack([embeddings_fp32, embeddings_int8])
+reduced = TSNE(n_components=2).fit_transform(combined)
+
+# Plot with colors: blue=fp32, red=int8
+# Success: Distinct clusters → Gemma captures semantic differences
+# Failure: Mixed clouds → Same problem as MPNet
+```
+
+**Success criterion**: Visual separation between distributions
+
+#### Experiment 2: Quantum Metrics for Semantic Characterization
+
+**Goal**: Quantify semantic shift magnitude and diversity changes
+
+```python
+# UMAP to fixed dimensions
+rho_fp32, rho_int8 = compute_density_matrices_umap(
+    embeddings_fp32, embeddings_int8,
+    n_components=20
+)
+
+# Compute quantum metrics
+trace_dist = trace_distance(rho_fp32, rho_int8)
+entropy_fp32 = von_neumann_entropy(rho_fp32)
+entropy_int8 = von_neumann_entropy(rho_int8)
+qre = quantum_relative_entropy(rho_fp32, rho_int8)
+
+# Interpretation
+print(f"Semantic shift magnitude: {trace_dist:.3f}")
+print(f"Diversity: {entropy_fp32:.3f} → {entropy_int8:.3f}")
+print(f"  Change: {((entropy_int8/entropy_fp32 - 1)*100):.1f}%")
+print(f"Information divergence: {qre:.3f}")
+```
+
+**Output example**:
+```
+Semantic shift magnitude: 0.18
+Diversity: 2.4 → 2.1
+  Change: -12.5% (int8 less diverse)
+Information divergence: 0.04
+```
+
+**Interpretation**: "int8 quantization creates moderate semantic shift (0.18) with 12.5% reduction in output diversity"
+
+#### Experiment 3: Semantic Axis Discovery
+
+**Goal**: Identify which semantic dimensions changed most
+
+```python
+# Find directions of maximum change
+diff_matrix = rho_fp32 - rho_int8
+eigenvalues, eigenvectors = np.linalg.eigh(diff_matrix)
+
+# Top 3 eigenvectors = semantic axes of maximum change
+top_k = 3
+for i in range(1, top_k+1):
+    idx = -i
+    eigenval = eigenvalues[idx]
+    axis = eigenvectors[:, idx]
+    
+    # Project completions onto this axis
+    scores_fp32 = reduced_fp32 @ axis
+    scores_int8 = reduced_int8 @ axis
+    
+    print(f"\nAxis {i} (eigenvalue={eigenval:.3f}):")
+    
+    # Find extreme completions
+    extreme_fp32 = samples_fp32[np.argmax(scores_fp32)]
+    extreme_int8 = samples_int8[np.argmax(scores_int8)]
+    
+    print(f"  fp32 extreme: {extreme_fp32[:100]}...")
+    print(f"  int8 extreme: {extreme_int8[:100]}...")
+    
+    # Manual labeling: What semantic property does this axis represent?
+    # Formality? Technical depth? Creativity? Coherence?
+```
+
+**Success**: Human can manually label discovered axes with semantic meaning (e.g., "Axis 1 = formality", "Axis 2 = technical depth")
+
+### Key Questions for Implementation
+
+1. **Gemma 4 31B Access**:
+   - API endpoint or batch processing system?
+   - How do we get embeddings for ~1000 texts?
+   - What's the latency/throughput?
+
+2. **Technical Specifications**:
+   - What's the embedding dimension?
+   - Which layer's representations (if extractable)?
+   - Any preprocessing required?
+
+3. **Scope**:
+   - Priority comparisons: fp32 vs int8, Llama vs Mistral, fp32 vs watermark?
+   - Sample sizes: Start with n=100 or go straight to n=1000?
+
+4. **Scripts to Create**:
+   - `gemma_embeddings.py` - Interface to Gemma 4 31B
+   - `test_gemma_sanity.py` - Replace MPNet in validation suite
+   - `interpret_quantum_metrics.py` - Semantic characterization
+   - `visualize_semantic_shift.py` - Axis discovery and visualization
+
+### What Success Looks Like
+
+**Level 1: Basic Validation**
+- ✓ t-SNE shows fp32 vs int8 separate (unlike MPNet's 0.99× failure)
+- ✓ Sanity check passes (fp32 vs fp32 low distance)
+- ✓ Correct ordering: same < quantization < different models
+
+**Level 2: Quantitative Characterization**
+- ✓ Trace distance provides magnitude of semantic shift
+- ✓ Entropy changes quantify diversity/uncertainty effects
+- ✓ QRE measures information loss direction
+
+**Level 3: Qualitative Interpretability**
+- ✓ Eigenvalue spectrum reveals number of meaningful change dimensions
+- ✓ Top eigenvectors correspond to human-interpretable semantic axes
+- ✓ Can manually label: "Axis 1 = coherence degradation from quantization"
+- ✓ Provides actionable insights: "int8 preserves factuality but reduces stylistic diversity"
+
+### Expected Outcomes
+
+**Optimistic scenario**: Gemma embeddings capture semantic effects of quantization/architecture differences. Quantum metrics provide interpretable characterization. We get:
+- Detection: MMD (Hamming) - p-values, statistical power
+- Interpretation: Quantum metrics (Gemma) - semantic shift characterization
+
+**Realistic scenario**: Gemma shows moderate improvement over MPNet. Some semantic dimensions separate (e.g., Llama vs Mistral) but quantization effects remain subtle. Still valuable for understanding architecture differences.
+
+**Pessimistic scenario**: Gemma has same issues as MPNet - semantic abstraction erases the signal. Conclusion: Quantum metrics not suitable even for interpretability. Pivot to other interpretability methods (attention analysis, token-level analysis, etc.).
+
+### Next Session Goals
+
+1. Access Gemma 4 31B and get embedding specs
+2. Run Experiment 1 (t-SNE sanity check)
+3. If promising, implement full quantum metrics pipeline with Gemma
+4. Generate first semantic characterization: "fp32 vs int8 in interpretable terms"
+
+**Status**: Planning phase. Ready to implement once Gemma access confirmed.
