@@ -795,3 +795,334 @@ for i in range(1, top_k+1):
 4. Generate first semantic characterization: "fp32 vs int8 in interpretable terms"
 
 **Status**: Planning phase. Ready to implement once EmbeddingGemma access confirmed.
+
+---
+
+## Experiment 1: EmbeddingGemma-300M t-SNE Validation
+
+**Date**: 2026-05-01
+
+### Implementation
+
+Created interface to EmbeddingGemma-300M API (NIST cluster):
+- **Interface**: `embeddinggemma_interface.py` - OpenAI-compatible API wrapper
+- **Embedding dimension**: 768 (same as MPNet)
+- **API endpoint**: https://rchat.nist.gov/api
+- **Test scripts**: `experiment1_tsne_sanity_check.py`, `experiment1b_model_comparison.py`
+
+### Test 1a: Quantization Detection (fp32 vs int8)
+
+**Configuration:**
+- Model: Llama-3-8B-Instruct
+- Prompts: wikipedia_en [0, 1, 2]
+- Samples: 100 per distribution
+- Method: t-SNE visualization of EmbeddingGemma embeddings
+
+**Results:**
+- **Sanity check (fp32 vs fp32)**: ✓ Complete overlap (as expected)
+- **Quantization (fp32 vs int8)**: ✗ Complete overlap (no separation)
+
+**Conclusion:** EmbeddingGemma-300M shows **same limitations as MPNet** for quantization detection. Semantic embeddings trained on similarity tasks collapse the subtle generation artifacts we want to detect.
+
+**Plot**: `test_1_sanity_check_fp32_vs_fp32.png`, `test_2_quantization_detection_fp32_vs_int8.png`
+
+### Test 1b: Model Architecture Comparison (Llama vs Mistral)
+
+**Hypothesis**: Different model architectures might produce semantically different outputs where quantization doesn't.
+
+**Configuration:**
+- Model A: Llama-3-8B-Instruct (fp32)
+- Model B: Mistral-7B-Instruct-v0.3 (fp32)
+- Prompts: wikipedia_en [0, 1, 2]
+- Samples: 100 per model
+- Method: t-SNE + separation ratio metric
+
+**Results:**
+- **Center-to-center distance**: 3.79
+- **Average cluster spread**: 9.41
+- **Separation ratio**: **0.40** (need >2.0 for strong separation)
+
+**Conclusion:** ✗ **No meaningful separation**. Even different model architectures produce semantically similar outputs for Wikipedia continuation tasks. Both models converge to "Wikipedia-style" factual text.
+
+**Plot**: `model_comparison_llama_vs_mistral.png`
+
+### Key Findings
+
+1. **EmbeddingGemma-300M has same limitations as MPNet**
+   - Both trained on semantic similarity tasks
+   - Both collapse generation artifacts (quantization, model differences)
+   - Model size (110M → 300M) doesn't solve fundamental training objective issue
+
+2. **Wikipedia prompts are too constrained**
+   - Factual, encyclopedic style
+   - Little room for stylistic variation
+   - Both Llama and Mistral converge to same semantic pattern
+
+3. **The paradox is resolved**
+   - MMD (Hamming) detects differences ✓ (character-level)
+   - EmbeddingGemma shows similarity ✗ (semantic-level)
+   - Both are correct! They measure different things.
+
+4. **Semantic embeddings not viable for this task**
+   - Quantization artifacts are implementation-level, not semantic
+   - Model architecture differences (for Wikipedia) are also implementation-level
+   - Semantic abstraction is the enemy, not the solution
+
+### Implications for Interpretability Goal
+
+**What we wanted**: Use semantic embeddings + quantum metrics to characterize *how* distributions differ
+
+**What we learned**: Semantic embeddings don't preserve the differences we care about:
+- Same model, different precision → same semantics
+- Different models, same task → same semantics (for constrained tasks)
+
+**The differences we want to understand are:**
+- Statistical: entropy, perplexity, diversity
+- Stylistic: formality, verbosity, complexity  
+- Structural: sentence patterns, coherence
+
+Not high-level semantic meaning (which is preserved across implementations).
+
+### Next Steps: Alternative Prompt Types
+
+**Constraint**: Limited to MET dataset prompt-response pairs
+
+**Available MET datasets** (discovered via data exploration):
+- ✗ `wikipedia_*` (en/de/es/fr/ru) - Too constrained, tested
+- ✓ **`humaneval`** - Coding tasks (RECOMMENDED)
+  - Multiple valid solutions
+  - Stylistic variation: comments, verbosity, approaches
+  - Model "personality" in code generation
+- ✓ **`ultrachat`** - Conversational dialogues
+  - Open-ended responses
+  - Formality/tone variations
+  - Explanation styles differ
+
+**Hypothesis**: Less constrained tasks (coding, conversation) may show semantic divergence where factual tasks don't.
+
+**Experiment 1c (planned)**: Re-run Llama vs Mistral comparison with `humaneval` prompts to test if coding tasks reveal semantic differences that Wikipedia doesn't.
+
+**Status**: Implemented experiment1b with dataset/prompt flexibility. Ready to test humaneval.
+
+---
+
+## Session 2 Progress: Bug Fixes and Preparation
+
+**Date**: 2026-04-30
+
+### Bug Fix: AttributeError in experiment1_tsne_sanity_check.py
+
+**Issue**: Script failed with:
+```
+AttributeError: 'CompletionSample' object has no attribute 'completions'
+```
+
+**Root cause**: Line 54 accessed `sample.completions` but the correct attribute is `sample.completion_sample`
+
+**Fix applied** (line 54-55):
+```python
+# Before:
+for completion in sample.completions:
+
+# After:
+completions = sample.completion_sample.numpy() if hasattr(sample.completion_sample, 'numpy') else sample.completion_sample
+for completion in completions:
+```
+
+### Successful Experiment 1 Execution
+
+Re-ran `experiment1_tsne_sanity_check.py` after bug fix:
+
+**Test 1: Sanity Check (fp32 vs fp32)**
+- Result: ✓ Complete overlap (as expected)
+- Plot: `test_1_sanity_check_fp32_vs_fp32.png`
+
+**Test 2: Quantization Detection (fp32 vs int8)**
+- Result: ✗ Complete overlap (no separation)
+- Plot: `test_2_quantization_detection_fp32_vs_int8.png`
+
+**Verdict**: Confirms EmbeddingGemma has same limitations as MPNet for quantization detection.
+
+### Enhanced experiment1b_model_comparison.py
+
+**Added command-line flexibility**:
+```python
+parser.add_argument("--dataset", default="wikipedia_en", help="Dataset name")
+parser.add_argument("--prompts", nargs="+", type=int, default=[0, 1, 2])
+prompt_ids = {args.dataset: args.prompts}
+```
+
+**Purpose**: Enable testing across different MET dataset types without code modification.
+
+**Next planned experiment**: 
+```bash
+python experiment1b_model_comparison.py --samples 100 --dataset humaneval --prompts 0 1 2 --L 500
+```
+
+**Hypothesis**: Coding tasks (humaneval) will show semantic variation between Llama and Mistral where Wikipedia prompts don't, because:
+- Multiple valid coding solutions exist
+- Different stylistic approaches (verbose/compact, comments/minimal)
+- Model "personality" in code generation
+- Less constrained by factual correctness
+
+**Status**: Ready to execute humaneval experiment.
+
+### Experiment 1c: Humaneval Coding Prompts
+
+**Execution**:
+```bash
+python experiment1b_model_comparison.py --samples 100 --dataset humaneval --prompts 0 1 2 --L 500
+```
+
+**Configuration:**
+- Model A: Llama-3-8B-Instruct (fp32)
+- Model B: Mistral-7B-Instruct-v0.3 (fp32)
+- Prompts: humaneval [0, 1, 2] (coding tasks)
+- Samples: 100 per model
+- Method: t-SNE + separation ratio
+
+**Results:**
+- **Center-to-center distance**: 3.01
+- **Average cluster spread**: 11.55
+- **Separation ratio**: **0.26** (worse than Wikipedia's 0.40!)
+
+**Conclusion:** ✗ **Even worse separation than Wikipedia**. Coding tasks did NOT reveal semantic differences between model architectures.
+
+**Plot**: `model_comparison_llama_vs_mistral.png` (overwritten)
+
+### Summary of Semantic Embedding Experiments
+
+| Dataset | Task Type | Separation Ratio | Result |
+|---------|-----------|------------------|--------|
+| wikipedia_en | Factual continuation | 0.40 | ✗ No separation |
+| humaneval | Code generation | 0.26 | ✗ Worse |
+
+**Key Finding**: EmbeddingGemma-300M (like MPNet) produces semantically similar embeddings for:
+- Same model, different quantization (fp32 vs int8)
+- Different models, same task (Llama vs Mistral)
+
+**Why even coding tasks failed**:
+- Both models trained on similar code corpora
+- Task: HumanEval function completion
+- Output constraint: Must produce valid Python
+- Result: Converge to similar semantic patterns despite different implementations
+
+**Fundamental issue**: Semantic similarity embeddings are trained to make different phrasings of the same meaning identical. This is exactly what prevents them from distinguishing model implementation differences.
+
+---
+
+## Conclusion: Semantic Embeddings + Quantum Metrics Not Viable
+
+**Date**: 2026-04-30
+
+### What We Tested
+
+1. **MPNet embeddings** (110M, 768-D) + quantum metrics
+   - Trace distance fails sanity check (sample-size artifacts)
+   - PCA fix works mathematically but weak discrimination (7% for quantization)
+   
+2. **EmbeddingGemma-300M embeddings** (300M, 768-D) + t-SNE visualization
+   - Same limitations as MPNet
+   - No separation for quantization (fp32 vs int8)
+   - No separation for architectures (Llama vs Mistral)
+   - Tested on constrained (Wikipedia) and unconstrained (HumanEval) tasks
+
+### Why This Approach Failed
+
+**The paradox resolved**:
+- MMD (Hamming kernel): Detects differences at p=0.01 ✓
+- Semantic embeddings: Show complete overlap ✗
+- **Both are correct!** They measure different levels of abstraction.
+
+**Character-level (Hamming)**:
+- Preserves: Exact token choices, phrasing, word order
+- Detects: Implementation-level differences (quantization, watermarking, architecture)
+
+**Semantic-level (EmbeddingGemma)**:
+- Preserves: Meaning, intent, content
+- Discards: Surface form, style variations, implementation artifacts
+- Training objective: Make semantically similar texts identical
+
+**The differences we want to understand** (quantization effects, architecture differences) are:
+- Statistical: perplexity, entropy, token distribution shifts
+- Stylistic: formality, verbosity, complexity
+- Implementation-level: Not semantic
+
+**Semantic embeddings abstract away the signal we're trying to measure.**
+
+### What We Learned
+
+1. **Detection is solved**: MMD with Hamming kernel works
+   - Correct null hypothesis behavior (sanity checks pass)
+   - Statistical power grows with sample size
+   - p-values provide rigorous guarantees
+
+2. **Quantum metrics on semantic embeddings don't work** for this problem:
+   - Trace distance: Sample-size artifacts even with PCA fix
+   - Weak discrimination: 7% effect size for quantization (PCA k=5)
+   - Embedding space issue: Signal not preserved in semantic abstraction
+
+3. **Model size doesn't help**: 
+   - MPNet (110M) vs EmbeddingGemma (300M)
+   - Same fundamental training objective = same limitations
+
+4. **Task diversity doesn't help**:
+   - Wikipedia (constrained factual) vs HumanEval (open-ended coding)
+   - Both show no semantic separation between models
+
+### Implications for Interpretability
+
+**Original goal**: Use quantum metrics on semantic embeddings to characterize *how* distributions differ
+
+**Why it can't work**: The "how" we want to characterize (quantization artifacts, generation pattern shifts) lives at the implementation level, not the semantic level.
+
+**Analogy**: Asking "what's the semantic difference between two translations of the same text" when the whole point of a good translation is to preserve semantics.
+
+### Alternative Paths Forward
+
+**For interpretability of distribution shifts**:
+
+1. **Statistical characterization** (no embeddings):
+   - Token-level entropy, perplexity distributions
+   - Vocabulary diversity metrics (type-token ratio)
+   - N-gram frequency shifts
+   - Repetition patterns, coherence scores
+
+2. **Feature-based analysis** (specific features, not full embeddings):
+   - VADER sentiment (already used in K-S test)
+   - Readability scores (Flesch-Kincaid, etc.)
+   - POS tag distributions
+   - Dependency parse patterns
+   - Named entity frequency
+
+3. **Direct inspection** (qualitative):
+   - Sample completions from each distribution
+   - Manual coding for differences
+   - Identify patterns (e.g., "int8 produces shorter responses")
+   
+4. **Cluster analysis** (token-level):
+   - K-means on token sequences (not embeddings)
+   - Topic modeling (LDA) on completions
+   - Compare topic distributions between models
+
+**For detection** (already working):
+- Continue using MMD with Hamming kernel
+- Explore other kernels: k-spectrum, subsequences
+- Power analysis for sample size recommendations
+
+### Final Verdict
+
+**Quantum-inspired metrics + semantic embeddings**: ❌ **Not recommended** for LLM distribution testing
+
+**Why**:
+- Semantic embeddings discard the signal (by design)
+- Quantum metrics don't add value beyond classical methods
+- Sample-size artifacts difficult to eliminate
+- No interpretability advantage demonstrated
+
+**What works**:
+- Classical MMD (Hamming): Detection with rigorous p-values ✓
+- Token-level statistics: Interpretable characterization ✓
+- Feature-based K-S tests: Specific dimension analysis (sentiment, etc.) ✓
+
+**Status**: Semantic embedding approach exhausted. Recommend focusing on statistical/token-level interpretability methods or declaring quantum metrics exploration complete with negative results.
