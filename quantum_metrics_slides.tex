@@ -133,33 +133,27 @@ Initial Results and Discoveries}
 
 \textbf{1. Trace Distance} $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
 \begin{itemize}
-  \item \textbf{Range:} [0, 1]
-  \item \textbf{Intuition:} Maximum probability of distinguishing two distributions
-  \item 0 = identical distributions (indistinguishable)
-  \item 1 = orthogonal distributions (perfectly separable)
-  \item \textbf{Geometric:} Distance in the space of quantum states
+  \item Range: [0, 1] — geometric distance in quantum state space
+  \item 0 = identical, 1 = orthogonal (perfectly separable)
+  \item \textbf{Intuition:} Maximum probability of distinguishing distributions
 \end{itemize}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \textbf{2. Von Neumann Entropy} $S(\rho) = -\text{Tr}(\rho \log \rho)$
 \begin{itemize}
-  \item \textbf{Range:} [0, $\log d$] where $d$ is embedding dimension
-  \item \textbf{Intuition:} Diversity/uncertainty of the distribution
-  \item Low entropy = outputs cluster tightly (deterministic)
-  \item High entropy = outputs spread broadly (diverse)
+  \item Range: [0, $\log d$] — diversity/uncertainty measure
+  \item Low = tight clustering, High = broad spread
   \item \textbf{Interpretability:} Does quantization reduce diversity?
 \end{itemize}
 
-\vspace{0.5em}
+\vspace{0.3em}
 
 \textbf{3. Quantum Relative Entropy} $D(\rho_A || \rho_B) = \text{Tr}(\rho_A \log \rho_A - \rho_A \log \rho_B)$
 \begin{itemize}
-  \item \textbf{Range:} [0, $\infty$)
-  \item \textbf{Intuition:} Information divergence (quantum KL divergence)
-  \item Measures information gained when using true dist. $\rho_A$ vs approximate $\rho_B$
-  \item \textbf{Asymmetric:} $D(\rho_A || \rho_B) \neq D(\rho_B || \rho_A)$
-  \item \textbf{Interpretability:} Information content shift from implementation change
+  \item Range: [0, $\infty$) — information divergence (asymmetric)
+  \item Measures information gained using $\rho_A$ vs $\rho_B$
+  \item \textbf{Interpretability:} Information shift from implementation change
 \end{itemize}
 
 \end{frame}
