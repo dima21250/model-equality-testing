@@ -741,4 +741,224 @@ Changed & Changed & Meaningful shift & \maybe\ Investigate \\
 
 \end{frame}
 
+% Appendix
+\appendix
+
+\begin{frame}{Appendix: What is the Trace?}
+
+\textbf{Definition:} The trace of a matrix is the sum of its diagonal elements.
+
+$$\text{Tr}(A) = \sum_{i} A_{ii} = A_{11} + A_{22} + A_{33} + \ldots$$
+
+\vspace{0.5em}
+
+\textbf{Example:}
+$$A = \begin{pmatrix} 3 & 1 & 2 \\ 5 & 4 & 6 \\ 7 & 8 & 9 \end{pmatrix} \quad \Rightarrow \quad \text{Tr}(A) = 3 + 4 + 9 = 16$$
+
+\vspace{0.5em}
+
+\textbf{Key properties:}
+\begin{itemize}
+  \item \textbf{Cyclic}: $\text{Tr}(ABC) = \text{Tr}(CAB) = \text{Tr}(BCA)$
+  \item \textbf{Basis-independent}: Same value regardless of coordinate system
+  \item \textbf{Linear}: $\text{Tr}(A + B) = \text{Tr}(A) + \text{Tr}(B)$
+  \item \textbf{Eigenvalue sum}: $\text{Tr}(A) = \sum_i \lambda_i$ (sum of eigenvalues)
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Why this matters:} Trace converts matrix operations to interpretable scalars
+
+\end{frame}
+
+\begin{frame}{Appendix: Why Trace in Quantum Metrics?}
+
+\textbf{1. Normalization} — Density matrix: $\rho = \frac{1}{N}\sum_i |\psi_i\rangle\langle\psi_i|$
+
+Require $\text{Tr}(\rho) = 1$ (total probability = 1)
+
+Makes all density matrices comparable (same scale)
+
+\vspace{0.3em}
+
+\textbf{2. Von Neumann Entropy} — $S(\rho) = -\text{Tr}(\rho \log \rho)$
+
+If $\rho$ has eigenvalues $\lambda_1, \ldots, \lambda_d$, then:
+$$S(\rho) = -\sum_{i} \lambda_i \log \lambda_i$$
+
+Trace extracts entropy from eigenvalue spectrum
+
+\begin{itemize}
+  \item All $\lambda_i = 1/d$ $\Rightarrow$ maximum entropy (uniform)
+  \item One $\lambda_i = 1$, rest = 0 $\Rightarrow$ minimum entropy (deterministic)
+\end{itemize}
+
+\vspace{0.3em}
+
+\textbf{3. Trace Distance} — $D(\rho_A, \rho_B) = \frac{1}{2}\text{Tr}|\rho_A - \rho_B|$
+
+$|\rho_A - \rho_B|$ = matrix absolute value (all eigenvalues positive)
+
+Trace sums up total difference across all dimensions
+
+Factor $\frac{1}{2}$ normalizes to [0, 1] range
+
+\end{frame}
+
+\begin{frame}{Appendix: Trace in Our Density Matrix Construction}
+
+\textbf{From embeddings to density matrix:}
+
+\begin{enumerate}
+  \item Start: N completions $\to$ embeddings $\mathbf{x}_1, \ldots, \mathbf{x}_N \in \mathbb{R}^{768}$
+  \item Normalize: $\psi_i = \mathbf{x}_i / ||\mathbf{x}_i||$ (unit vectors)
+  \item Gram matrix (N $\times$ N): $G_{ij} = \langle \psi_i | \psi_j \rangle$
+  \item Density matrix: $\rho = \frac{1}{N} G$
+\end{enumerate}
+
+\vspace{0.5em}
+
+\textbf{Verifying normalization:}
+$$\text{Tr}(\rho) = \frac{1}{N}\sum_{i=1}^{N} G_{ii} = \frac{1}{N}\sum_{i=1}^{N} \langle\psi_i|\psi_i\rangle = \frac{1}{N} \cdot N = 1 \quad \checkmark$$
+
+Because $||\psi_i|| = 1$ (normalized), diagonal elements $G_{ii} = 1$
+
+\vspace{0.5em}
+
+\textbf{What trace gives us:}
+\begin{itemize}
+  \item Converts N $\times$ N matrix to single number
+  \item Basis-independent (doesn't depend on coordinate choice)
+  \item Connects to eigenvalues: $\text{Tr}(\rho) = \sum_i \lambda_i$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Appendix: Why Trace is Essential}
+
+\textbf{Five reasons trace appears everywhere in quantum metrics:}
+
+\vspace{0.5em}
+
+\begin{enumerate}
+  \item \textbf{Basis-independent}
+  \begin{itemize}
+    \item Results don't depend on how we orient embedding space
+    \item Geometric invariant — same in any coordinate system
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Scalar output}
+  \begin{itemize}
+    \item Converts high-dimensional matrix operations to interpretable numbers
+    \item Can compare traces directly (unlike comparing matrices)
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Probability interpretation}
+  \begin{itemize}
+    \item $\text{Tr}(\rho) = 1$ ensures proper normalization
+    \item Connects to total probability in quantum mechanics
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Eigenvalue extraction}
+  \begin{itemize}
+    \item Trace "reads out" information from eigenvalue spectrum
+    \item $\text{Tr}(A) = \sum_i \lambda_i$ — fundamental relationship
+  \end{itemize}
+
+  \vspace{0.3em}
+
+  \item \textbf{Geometric meaning}
+  \begin{itemize}
+    \item In quantum mechanics, trace gives observable quantities
+    \item Natural way to aggregate information across dimensions
+  \end{itemize}
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{Appendix: The Sample-Size Artifact We Discovered}
+
+\textbf{Problem:} Gram matrix size grows with sample size
+
+\vspace{0.5em}
+
+Our density matrix: $\rho = \frac{1}{N} G$ where $G$ is N $\times$ N
+
+\vspace{0.3em}
+
+When computing trace distance $\frac{1}{2}\text{Tr}|\rho_A - \rho_B|$:
+\begin{itemize}
+  \item N = 100: Trace sums 100 eigenvalues
+  \item N = 1000: Trace sums 1000 eigenvalues
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{The artifact:}
+
+More samples $\to$ bigger matrix $\to$ more terms in trace sum $\to$ higher distance
+
+\emph{Even for identical distributions!}
+
+\vspace{0.5em}
+
+\textbf{Example} (synthetic data, N(0, I) vs N(0, I)):
+
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+\textbf{N} & \textbf{Trace Distance} \\
+\midrule
+50 & 0.146 \\
+100 & 0.212 \\
+500 & 0.467 \\
+1000 & 0.636 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.3em}
+
+\textbf{The trace operation is fine} — the problem is using an N $\times$ N matrix
+
+\end{frame}
+
+\begin{frame}{Appendix: Summary}
+
+\textbf{What is trace?} Sum of diagonal elements
+
+\vspace{0.5em}
+
+\textbf{Why use it in quantum metrics?}
+\begin{itemize}
+  \item Normalization: $\text{Tr}(\rho) = 1$
+  \item Extract scalars from matrices (entropy, distance, divergence)
+  \item Basis-independent — geometric invariant
+  \item Connect to eigenvalues/spectrum
+  \item Natural aggregation across dimensions
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{In our experiments:}
+
+Trace converts high-dimensional matrix comparisons into interpretable scalar measures of:
+\begin{itemize}
+  \item Difference (trace distance)
+  \item Diversity (Von Neumann entropy)
+  \item Information content (quantum relative entropy)
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{The lesson:} Trace is a fundamental tool in quantum information theory for extracting meaningful scalar quantities from operator/matrix representations
+
+\end{frame}
+
 \end{document}
