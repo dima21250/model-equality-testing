@@ -598,7 +598,7 @@ PCA approach tested and documented. Fixes mathematical artifact but reveals deep
 
 ---
 
-## Pivot to Interpretability: Gemma 4 31B Embeddings
+## Pivot to Interpretability: EmbeddingGemma-300M Embeddings
 
 **Date**: 2026-05-01
 
@@ -614,7 +614,7 @@ PCA approach tested and documented. Fixes mathematical artifact but reveals deep
 
 **Key insight**: For interpretability, we *want* high-level semantic abstractions. The fact that MPNet "collapses" surface variations is a feature, not a bug - it lets us focus on meaningful semantic changes.
 
-### Why MPNet Failed vs Why Gemma 4 31B Might Succeed
+### Why MPNet Failed vs Why EmbeddingGemma-300M Might Succeed
 
 **MPNet (all-mpnet-base-v2) limitations**:
 - 110M parameters, 768-D embeddings
@@ -622,13 +622,13 @@ PCA approach tested and documented. Fixes mathematical artifact but reveals deep
 - Optimized to make semantically similar texts identical
 - **Result**: Collapsed quantization effects we wanted to detect
 
-**Gemma 4 31B potential advantages**:
-- 31B parameters (281× larger)
-- Richer training corpus (vast general text vs sentence pairs)
-- Higher dimensional embeddings (likely 2048+)
-- Broader semantic coverage beyond paraphrase detection
+**EmbeddingGemma-300M potential advantages**:
+- 300M parameters (~3× larger than MPNet)
+- Purpose-built for embedding generation (Gemma family)
+- Different training approach and architecture
+- May capture semantic nuances MPNet misses
 
-**Hypothesis**: If quantization affects semantics (coherence, style, diversity), Gemma embeddings might encode these shifts where MPNet doesn't.
+**Hypothesis**: If quantization affects semantics (coherence, style, diversity), EmbeddingGemma embeddings might encode these shifts where MPNet doesn't.
 
 ### Why This Approach Makes Sense
 
@@ -643,18 +643,18 @@ PCA approach tested and documented. Fixes mathematical artifact but reveals deep
 
 **The approaches are complementary**:
 1. **MMD (Hamming)**: "Distributions differ, p<0.001" ✓
-2. **Quantum metrics (Gemma embeddings)**: "15% semantic shift along axis of decreased diversity"
+2. **Quantum metrics (EmbeddingGemma)**: "15% semantic shift along axis of decreased diversity"
 
 ### Proposed Experiments
 
 #### Experiment 1: Quick Sanity Check (t-SNE/UMAP Visualization)
 
-**Goal**: Do Gemma embeddings separate fp32 vs int8?
+**Goal**: Do EmbeddingGemma embeddings separate fp32 vs int8?
 
 ```python
-# Embed with Gemma 4 31B
-embeddings_fp32 = embed_with_gemma(samples_fp32)
-embeddings_int8 = embed_with_gemma(samples_int8)
+# Embed with EmbeddingGemma-300M
+embeddings_fp32 = embed_with_embeddinggemma(samples_fp32)
+embeddings_int8 = embed_with_embeddinggemma(samples_int8)
 
 # Reduce to 2D for visualization
 from sklearn.manifold import TSNE
@@ -662,7 +662,7 @@ combined = np.vstack([embeddings_fp32, embeddings_int8])
 reduced = TSNE(n_components=2).fit_transform(combined)
 
 # Plot with colors: blue=fp32, red=int8
-# Success: Distinct clusters → Gemma captures semantic differences
+# Success: Distinct clusters → EmbeddingGemma captures semantic differences
 # Failure: Mixed clouds → Same problem as MPNet
 ```
 
@@ -739,7 +739,7 @@ for i in range(1, top_k+1):
 
 ### Key Questions for Implementation
 
-1. **Gemma 4 31B Access**:
+1. **EmbeddingGemma-300M Access**:
    - API endpoint or batch processing system?
    - How do we get embeddings for ~1000 texts?
    - What's the latency/throughput?
@@ -754,7 +754,7 @@ for i in range(1, top_k+1):
    - Sample sizes: Start with n=100 or go straight to n=1000?
 
 4. **Scripts to Create**:
-   - `gemma_embeddings.py` - Interface to Gemma 4 31B
+   - `gemma_embeddings.py` - Interface to EmbeddingGemma-300M
    - `test_gemma_sanity.py` - Replace MPNet in validation suite
    - `interpret_quantum_metrics.py` - Semantic characterization
    - `visualize_semantic_shift.py` - Axis discovery and visualization
@@ -779,19 +779,19 @@ for i in range(1, top_k+1):
 
 ### Expected Outcomes
 
-**Optimistic scenario**: Gemma embeddings capture semantic effects of quantization/architecture differences. Quantum metrics provide interpretable characterization. We get:
+**Optimistic scenario**: EmbeddingGemma embeddings capture semantic effects of quantization/architecture differences. Quantum metrics provide interpretable characterization. We get:
 - Detection: MMD (Hamming) - p-values, statistical power
-- Interpretation: Quantum metrics (Gemma) - semantic shift characterization
+- Interpretation: Quantum metrics (EmbeddingGemma) - semantic shift characterization
 
-**Realistic scenario**: Gemma shows moderate improvement over MPNet. Some semantic dimensions separate (e.g., Llama vs Mistral) but quantization effects remain subtle. Still valuable for understanding architecture differences.
+**Realistic scenario**: EmbeddingGemma shows moderate improvement over MPNet. Some semantic dimensions separate (e.g., Llama vs Mistral) but quantization effects remain subtle. Still valuable for understanding architecture differences.
 
-**Pessimistic scenario**: Gemma has same issues as MPNet - semantic abstraction erases the signal. Conclusion: Quantum metrics not suitable even for interpretability. Pivot to other interpretability methods (attention analysis, token-level analysis, etc.).
+**Pessimistic scenario**: EmbeddingGemma has same issues as MPNet - semantic abstraction erases the signal. Conclusion: Quantum metrics not suitable even for interpretability. Pivot to other interpretability methods (attention analysis, token-level analysis, etc.).
 
 ### Next Session Goals
 
-1. Access Gemma 4 31B and get embedding specs
+1. Access EmbeddingGemma-300M and get embedding specs
 2. Run Experiment 1 (t-SNE sanity check)
-3. If promising, implement full quantum metrics pipeline with Gemma
+3. If promising, implement full quantum metrics pipeline with EmbeddingGemma
 4. Generate first semantic characterization: "fp32 vs int8 in interpretable terms"
 
-**Status**: Planning phase. Ready to implement once Gemma access confirmed.
+**Status**: Planning phase. Ready to implement once EmbeddingGemma access confirmed.
