@@ -14,6 +14,7 @@ cases to evaluate discriminative power of quantum metrics.
 import argparse
 from typing import Dict, List
 import torch
+import numpy as np
 
 from model_equality_testing.dataset import load_distribution
 from model_equality_testing.algorithm import run_two_sample_test
@@ -47,33 +48,61 @@ def sample_distribution(
     return dist.sample(n=n_samples)
 
 
-def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2"):
-    """Compute all quantum metrics with timing.
+def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2", b=100):
+    """Compute all quantum metrics with timing and statistical calibration.
+
+    Args:
+        sample1: First CompletionSample
+        sample2: Second CompletionSample
+        embedding_model: Name of SBERT model to use
+        b: Number of permutations for p-value computation
 
     Returns:
-        Dict mapping metric name to (value, elapsed_time)
+        Dict mapping metric name to (statistic, pvalue, elapsed_time)
     """
     results = {}
 
-    print("  Computing quantum metrics...")
+    print("  Computing quantum metrics with permutation tests...")
 
-    # Trace distance
+    # Trace distance with permutation p-value
     with Stopwatch() as sw:
-        trace_dist = quantum_trace_distance(sample1, sample2, embedding_model=embedding_model)
-    results["Trace Distance"] = (trace_dist, sw.time)
-    print(f"    - Trace distance: {trace_dist:.6f} (took {sw.time:.2f}s)")
+        pvalue, trace_dist = run_two_sample_test(
+            sample1, sample2,
+            stat_type="quantum_trace_distance",
+            pvalue_type="permutation_pvalue",
+            b=b,
+            embedding_model=embedding_model
+        )
+    results["Trace Distance"] = (trace_dist, pvalue, sw.time)
+    print(f"    - Trace distance: {trace_dist:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
-    # Von Neumann entropy divergence
+    # Von Neumann entropy divergence with permutation p-value
     with Stopwatch() as sw:
-        entropy_div = quantum_von_neumann_divergence(sample1, sample2, embedding_model=embedding_model)
-    results["Von Neumann Divergence"] = (entropy_div, sw.time)
-    print(f"    - Von Neumann divergence: {entropy_div:.6f} (took {sw.time:.2f}s)")
+        pvalue, entropy_div = run_two_sample_test(
+            sample1, sample2,
+            stat_type="quantum_von_neumann_divergence",
+            pvalue_type="permutation_pvalue",
+            b=b,
+            embedding_model=embedding_model
+        )
+    results["Von Neumann Divergence"] = (entropy_div, pvalue, sw.time)
+    print(f"    - Von Neumann divergence: {entropy_div:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
-    # Quantum relative entropy (symmetric)
+    # Quantum relative entropy (symmetric) with permutation p-value
     with Stopwatch() as sw:
-        qre = quantum_relative_entropy_test(sample1, sample2, embedding_model=embedding_model, symmetric=True)
-    results["QRE (symmetric)"] = (qre, sw.time)
-    print(f"    - QRE (symmetric): {qre:.6f} (took {sw.time:.2f}s)")
+        pvalue, qre = run_two_sample_test(
+            sample1, sample2,
+            stat_type="quantum_relative_entropy",
+            pvalue_type="permutation_pvalue",
+            b=b,
+            embedding_model=embedding_model,
+            symmetric=True
+        )
+    results["QRE (symmetric)"] = (qre, pvalue, sw.time)
+    if qre == np.inf:
+        print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    else:
+        print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
     return results
 
@@ -124,13 +153,29 @@ def run_comparison(
     label: str,
     root_dir: str = "./data",
     embedding_model: str = "all-mpnet-base-v2",
+    b: int = 100,
 ):
-    """Run full comparison suite on a pair of distributions."""
+    """Run full comparison suite on a pair of distributions.
+
+    Args:
+        model_a: First model name
+        model_b: Second model name
+        source_a: Source for model A (fp32, int8, etc.)
+        source_b: Source for model B
+        prompt_ids: Dictionary mapping dataset names to prompt ID lists
+        L: Completion length
+        n_samples: Number of samples per distribution
+        label: Descriptive label for this comparison
+        root_dir: Root directory for dataset
+        embedding_model: SBERT model name
+        b: Number of permutations for p-value computation
+    """
     print(f"\n{'='*80}")
     print(f"{label}")
     print(f"  Model A: {model_a} [{source_a}]")
     print(f"  Model B: {model_b} [{source_b}]")
     print(f"  Samples: {n_samples}, Prompts: {prompt_ids}")
+    print(f"  Permutations: {b}")
     print(f"{'='*80}\n")
 
     # Load samples
@@ -141,7 +186,7 @@ def run_comparison(
     print(f"  Loaded in {sw.time:.2f}s\n")
 
     # Compute metrics
-    quantum_results = compute_quantum_metrics(samp_a, samp_b, embedding_model=embedding_model)
+    quantum_results = compute_quantum_metrics(samp_a, samp_b, embedding_model=embedding_model, b=b)
     print()
     classical_results = compute_classical_metrics(samp_a, samp_b)
 
@@ -210,6 +255,12 @@ def main():
         action="store_true",
         help="Run full validation suite (equivalence + difference cases)"
     )
+    parser.add_argument(
+        "--b",
+        type=int,
+        default=100,
+        help="Number of permutations for p-value computation (default: 100)"
+    )
 
     args = parser.parse_args()
 
@@ -232,6 +283,7 @@ def main():
             label="Case 1: Equivalence Test (Same Model, Same Source)",
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
+            b=args.b,
         )
 
         # Case 2: Same model, different source (should show MODERATE differences)
@@ -246,6 +298,7 @@ def main():
             label="Case 2: Quantization Test (FP32 vs INT8)",
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
+            b=args.b,
         )
 
         # Case 3: Different models (should show LARGE differences)
@@ -260,6 +313,7 @@ def main():
             label="Case 3: Model Difference Test (Llama-3-8B vs Mistral-7B)",
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
+            b=args.b,
         )
     else:
         # Single comparison
@@ -274,6 +328,7 @@ def main():
             label="Quantum vs Classical Metrics Comparison",
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
+            b=args.b,
         )
 
 
