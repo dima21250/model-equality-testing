@@ -1011,4 +1011,7 @@ IMPLEMENTED_TESTS = {
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,
+    "quantum_trace_distance": quantum_trace_distance,
+    "quantum_von_neumann_divergence": quantum_von_neumann_divergence,
+    "quantum_relative_entropy": quantum_relative_entropy_test,
 }
