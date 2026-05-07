@@ -88,21 +88,24 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
     results["Von Neumann Divergence"] = (entropy_div, pvalue, sw.time)
     print(f"    - Von Neumann divergence: {entropy_div:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
-    # Quantum relative entropy (symmetric) with permutation p-value
-    with Stopwatch() as sw:
-        pvalue, qre = run_two_sample_test(
-            sample1, sample2,
-            stat_type="quantum_relative_entropy",
-            pvalue_type="permutation_pvalue",
-            b=b,
-            embedding_model=embedding_model,
-            symmetric=True
-        )
-    results["QRE (symmetric)"] = (qre, pvalue, sw.time)
-    if qre == np.inf:
-        print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
-    else:
-        print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    # Quantum relative entropy (symmetric) - DISABLED due to rank mismatch issues
+    # Consistently returns np.inf when rank(ρ) > rank(σ), which occurs frequently
+    # with finite sample sizes. Needs further investigation or larger sample sizes.
+    #
+    # with Stopwatch() as sw:
+    #     pvalue, qre = run_two_sample_test(
+    #         sample1, sample2,
+    #         stat_type="quantum_relative_entropy",
+    #         pvalue_type="permutation_pvalue",
+    #         b=b,
+    #         embedding_model=embedding_model,
+    #         symmetric=True
+    #     )
+    # results["QRE (symmetric)"] = (qre, pvalue, sw.time)
+    # if qre == np.inf:
+    #     print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    # else:
+    #     print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
     return results
 
