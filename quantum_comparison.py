@@ -292,6 +292,11 @@ def main():
         metavar=("PROMPT_A", "PROMPT_B"),
         help="Compare two different prompts on the same model/source (positive control)"
     )
+    parser.add_argument(
+        "--dataset_b",
+        default=None,
+        help="Dataset for sample B in prompt comparison mode (default: same as --dataset)"
+    )
 
     args = parser.parse_args()
 
@@ -299,8 +304,13 @@ def main():
 
     if args.prompt_comparison:
         prompt_a, prompt_b = args.prompt_comparison
+        dataset_b = args.dataset_b if args.dataset_b else args.dataset
         prompt_ids_a = {args.dataset: [prompt_a]}
-        prompt_ids_b = {args.dataset: [prompt_b]}
+        prompt_ids_b = {dataset_b: [prompt_b]}
+        if args.dataset_b:
+            label = f"Prompt Comparison: {args.dataset}[{prompt_a}] vs {dataset_b}[{prompt_b}] ({args.source_a})"
+        else:
+            label = f"Prompt Comparison: prompt {prompt_a} vs prompt {prompt_b} ({args.source_a})"
         run_comparison(
             model_a=args.model_a,
             model_b=args.model_a,
@@ -310,7 +320,7 @@ def main():
             prompt_ids_b=prompt_ids_b,
             L=args.L,
             n_samples=args.samples,
-            label=f"Prompt Comparison: prompt {prompt_a} vs prompt {prompt_b} ({args.source_a})",
+            label=label,
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
             b=args.b,
