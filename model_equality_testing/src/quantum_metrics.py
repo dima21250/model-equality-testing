@@ -8,8 +8,14 @@ This module implements quantum-inspired metrics computed on embeddings:
 - Von Neumann entropy (quantum uncertainty)
 - Quantum Relative Entropy (QRE, quantum divergence)
 
-These metrics operate on semantic embeddings and can capture higher-level
-distributional differences compared to token-level or n-gram statistics.
+Known limitation: The NxN density matrices constructed from sample-specific
+Gram matrices (PIP = E @ E.T) live in different N-dimensional subspaces
+of R^d for different samples. Cross-matrix metrics (trace distance, QRE)
+are therefore not well-defined in the quantum-mechanical sense, and trace
+distance exhibits pathological sample-size dependence (increases with N
+for identical distributions). Von Neumann divergence (|S(rho_A) - S(rho_B)|)
+avoids this by computing entropy per-matrix independently.
+See INITIAL-RESULTS.md for experimental validation.
 
 References:
 - Nielsen & Chuang, "Quantum Computation and Quantum Information"

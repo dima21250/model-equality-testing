@@ -144,9 +144,15 @@ def run_two_sample_test(
             return (pvalue, statistic)
 
         elif pvalue_type == "permutation_pvalue":
-            get_pvalue = two_sample_permutation_pvalue(
-                sample, other_sample, b=b, stat_type=stat_type, **kwargs
-            )
+            from .pvalue import QUANTUM_STAT_TYPES, two_sample_embedding_permutation_pvalue
+            if stat_type in QUANTUM_STAT_TYPES:
+                get_pvalue = two_sample_embedding_permutation_pvalue(
+                    sample, other_sample, b=b, stat_type=stat_type, **kwargs
+                )
+            else:
+                get_pvalue = two_sample_permutation_pvalue(
+                    sample, other_sample, b=b, stat_type=stat_type, **kwargs
+                )
         elif pvalue_type == "parametric_bootstrap":
             assert (
                 null_dist is not None

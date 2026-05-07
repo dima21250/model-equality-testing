@@ -18,12 +18,14 @@ from .tests import (
     mmd_hamming,
     mmd_kspectrum,
     mmd_all_subsequences,
-    quantum_trace_distance,
     quantum_von_neumann_divergence,
     quantum_relative_entropy_test,
 )
 
 # Mapping from string name to test function
+# Note: quantum_trace_distance removed from registry due to pathological
+# sample-size dependence. The function remains available for direct use
+# via tests.quantum_trace_distance(). See INITIAL-RESULTS.md.
 IMPLEMENTED_TESTS = {
     "g_squared": g_squared,
     "chi_squared": chi_squared,
@@ -40,7 +42,6 @@ IMPLEMENTED_TESTS = {
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,
-    "quantum_trace_distance": quantum_trace_distance,
     "quantum_von_neumann_divergence": quantum_von_neumann_divergence,
     "quantum_relative_entropy": quantum_relative_entropy_test,
 }

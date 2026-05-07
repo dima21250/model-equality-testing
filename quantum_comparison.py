@@ -19,7 +19,6 @@ import numpy as np
 from model_equality_testing.dataset import load_distribution
 from model_equality_testing.algorithm import run_two_sample_test
 from model_equality_testing.tests import (
-    quantum_trace_distance,
     quantum_von_neumann_divergence,
     quantum_relative_entropy_test,
     mmd_hamming,
@@ -63,18 +62,6 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
     results = {}
 
     print("  Computing quantum metrics with permutation tests...")
-
-    # Trace distance with permutation p-value
-    with Stopwatch() as sw:
-        pvalue, trace_dist = run_two_sample_test(
-            sample1, sample2,
-            stat_type="quantum_trace_distance",
-            pvalue_type="permutation_pvalue",
-            b=b,
-            embedding_model=embedding_model
-        )
-    results["Trace Distance"] = (trace_dist, pvalue, sw.time)
-    print(f"    - Trace distance: {trace_dist:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
     # Von Neumann entropy divergence with permutation p-value
     with Stopwatch() as sw:
