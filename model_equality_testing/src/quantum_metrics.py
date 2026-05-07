@@ -24,7 +24,8 @@ References:
 
 import numpy as np
 import logging
-from typing import Tuple
+from typing import Tuple, Optional
+from sklearn.decomposition import PCA
 
 
 def compute_pip_matrix(embeddings: np.ndarray) -> np.ndarray:
@@ -90,6 +91,52 @@ def normalize_to_density_matrix(
 
     rho = pip / trace
     return rho
+
+
+def pca_density_matrix(
+    embeddings: np.ndarray,
+    pca_transform: PCA,
+) -> np.ndarray:
+    """Construct a k×k density matrix via PCA projection.
+
+    Projects embeddings into a shared k-dimensional PCA basis, then computes
+    the covariance matrix in that space as the density matrix:
+        X_reduced = pca_transform(embeddings)   # (N, k)
+        cov = X_reduced.T @ X_reduced / N       # (k, k)
+        ρ = cov / Tr(cov)                        # unit trace
+
+    This fixes two problems with the NxN Gram matrix approach:
+    1. Both samples' density matrices live in the same k-dimensional space
+    2. Matrix dimension is fixed at k×k regardless of sample size N
+
+    Args:
+        embeddings: (N, d) array of embeddings
+        pca_transform: A fitted sklearn PCA object (fit on the combined pool)
+
+    Returns:
+        rho: (k, k) density matrix with Tr(ρ) = 1
+    """
+    X_reduced = pca_transform.transform(embeddings)
+    cov = X_reduced.T @ X_reduced / len(X_reduced)
+    return normalize_to_density_matrix(cov)
+
+
+def fit_pca(
+    embeddings_combined: np.ndarray,
+    k: int = 50,
+) -> PCA:
+    """Fit PCA on the combined embedding pool.
+
+    Args:
+        embeddings_combined: (N_total, d) array of all embeddings from both samples
+        k: Number of principal components
+
+    Returns:
+        Fitted PCA object
+    """
+    pca = PCA(n_components=k, svd_solver="full")
+    pca.fit(embeddings_combined)
+    return pca
 
 
 def trace_distance(rho_a: np.ndarray, rho_b: np.ndarray) -> float:

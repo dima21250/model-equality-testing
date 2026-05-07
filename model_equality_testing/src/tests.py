@@ -584,40 +584,41 @@ def quantum_trace_distance(
     sample2: CompletionSample,
     embedding_model: str = "all-mpnet-base-v2",
     batch_size: int = 32,
+    pca_k: int = 50,
     _precomputed_embeddings: tuple = None,
+    _fitted_pca=None,
 ) -> float:
     """Two-sample test using quantum trace distance on SBERT embeddings.
 
-    This test embeds both samples using a pre-trained sentence transformer,
-    constructs density matrices from the embeddings, and computes the
-    quantum trace distance between them.
+    Constructs density matrices from embeddings and computes the quantum
+    trace distance: D(ρ_A, ρ_B) = 0.5 * Tr(|ρ_A - ρ_B|).
 
-    The trace distance quantifies how distinguishable two quantum states are
-    and ranges from 0 (identical) to 1 (orthogonal).
-
-    Note: The NxN Gram-matrix-based density matrices used here live in
-    different Hilbert spaces for different samples. See INITIAL-RESULTS.md
-    for known limitations including sample-size dependence.
+    When pca_k is set (default 50), embeddings are projected to a shared
+    k-dimensional PCA basis and density matrices are k×k covariance matrices.
+    This fixes the Hilbert space mismatch and sample-size dependence of the
+    legacy NxN Gram matrix approach.
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
         sample2: Second CompletionSample with unicode codepoint completions
-        embedding_model: Name of sentence-transformers model (default: all-mpnet-base-v2)
+        embedding_model: Name of sentence-transformers model
         batch_size: Batch size for embedding inference
+        pca_k: Number of PCA components for density matrix construction.
+            Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
-            embedding inference. Used internally by permutation testing for performance.
+            embedding inference. Used internally by permutation testing.
+        _fitted_pca: Optional pre-fitted PCA object. Used internally by permutation
+            testing to ensure all permutations share the same basis.
 
     Returns:
         Trace distance statistic in [0, 1]
-
-    See Also:
-        quantum_von_neumann_divergence: Entropy-based divergence
-        quantum_relative_entropy_test: QRE-based test
     """
     from .quantum_metrics import (
         compute_pip_matrix,
         normalize_to_density_matrix,
         trace_distance,
+        pca_density_matrix,
+        fit_pca,
     )
 
     if _precomputed_embeddings is not None:
@@ -627,10 +628,19 @@ def quantum_trace_distance(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    pip1 = compute_pip_matrix(embeddings1)
-    pip2 = compute_pip_matrix(embeddings2)
-    rho1 = normalize_to_density_matrix(pip1)
-    rho2 = normalize_to_density_matrix(pip2)
+    if pca_k is not None:
+        if _fitted_pca is not None:
+            pca = _fitted_pca
+        else:
+            combined = np.concatenate([embeddings1, embeddings2], axis=0)
+            pca = fit_pca(combined, k=pca_k)
+        rho1 = pca_density_matrix(embeddings1, pca)
+        rho2 = pca_density_matrix(embeddings2, pca)
+    else:
+        pip1 = compute_pip_matrix(embeddings1)
+        pip2 = compute_pip_matrix(embeddings2)
+        rho1 = normalize_to_density_matrix(pip1)
+        rho2 = normalize_to_density_matrix(pip2)
 
     return trace_distance(rho1, rho2)
 
@@ -640,35 +650,40 @@ def quantum_von_neumann_divergence(
     sample2: CompletionSample,
     embedding_model: str = "all-mpnet-base-v2",
     batch_size: int = 32,
+    pca_k: int = 50,
     _precomputed_embeddings: tuple = None,
+    _fitted_pca=None,
 ) -> float:
     """Divergence based on difference in von Neumann entropies.
 
     Computes |S(ρ_A) - S(ρ_B)| where S is the von Neumann entropy.
 
-    The von Neumann entropy measures the "quantum uncertainty" or "mixedness"
-    of a state. This metric captures differences in output diversity between
-    the two distributions.
+    When pca_k is set (default 50), embeddings are projected to a shared
+    k-dimensional PCA basis and density matrices are constructed as k×k
+    covariance matrices. This fixes the Hilbert space mismatch in the
+    NxN Gram matrix approach and makes the metric sample-size independent.
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
         sample2: Second CompletionSample with unicode codepoint completions
         embedding_model: Name of sentence-transformers model
         batch_size: Batch size for embedding inference
+        pca_k: Number of PCA components for density matrix construction.
+            Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
-            embedding inference. Used internally by permutation testing for performance.
+            embedding inference. Used internally by permutation testing.
+        _fitted_pca: Optional pre-fitted PCA object. Used internally by permutation
+            testing to ensure all permutations share the same basis.
 
     Returns:
         Absolute difference in von Neumann entropies (non-negative)
-
-    See Also:
-        quantum_trace_distance: Distinguishability-based metric
-        von_neumann_entropy: Underlying entropy function
     """
     from .quantum_metrics import (
         compute_pip_matrix,
         normalize_to_density_matrix,
         von_neumann_entropy,
+        pca_density_matrix,
+        fit_pca,
     )
 
     if _precomputed_embeddings is not None:
@@ -678,10 +693,19 @@ def quantum_von_neumann_divergence(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    pip1 = compute_pip_matrix(embeddings1)
-    pip2 = compute_pip_matrix(embeddings2)
-    rho1 = normalize_to_density_matrix(pip1)
-    rho2 = normalize_to_density_matrix(pip2)
+    if pca_k is not None:
+        if _fitted_pca is not None:
+            pca = _fitted_pca
+        else:
+            combined = np.concatenate([embeddings1, embeddings2], axis=0)
+            pca = fit_pca(combined, k=pca_k)
+        rho1 = pca_density_matrix(embeddings1, pca)
+        rho2 = pca_density_matrix(embeddings2, pca)
+    else:
+        pip1 = compute_pip_matrix(embeddings1)
+        pip2 = compute_pip_matrix(embeddings2)
+        rho1 = normalize_to_density_matrix(pip1)
+        rho2 = normalize_to_density_matrix(pip2)
 
     entropy1 = von_neumann_entropy(rho1)
     entropy2 = von_neumann_entropy(rho2)
@@ -695,16 +719,22 @@ def quantum_relative_entropy_test(
     embedding_model: str = "all-mpnet-base-v2",
     batch_size: int = 32,
     symmetric: bool = True,
+    pca_k: int = 50,
     _precomputed_embeddings: tuple = None,
+    _fitted_pca=None,
 ) -> float:
     """Two-sample test using quantum relative entropy (QRE).
 
-    Computes the quantum relative entropy S(ρ || σ), which measures
-    how much information is lost when using σ to approximate ρ.
+    Computes S(ρ || σ) = Tr(ρ log ρ - ρ log σ), measuring information loss
+    when approximating ρ with σ.
 
     If symmetric=True, computes the symmetrized version:
         S(ρ_A || ρ_B) + S(ρ_B || ρ_A)
-    which is analogous to Jensen-Shannon divergence.
+
+    When pca_k is set (default 50), both density matrices are constructed
+    in the same k-dimensional PCA basis. This makes the eigenvalue-pairing
+    approximation valid (shared eigenbasis) and eliminates the rank mismatch
+    issues that caused infinity values with the NxN Gram matrix approach.
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
@@ -712,21 +742,22 @@ def quantum_relative_entropy_test(
         embedding_model: Name of sentence-transformers model
         batch_size: Batch size for embedding inference
         symmetric: If True, return symmetric QRE (default: True)
+        pca_k: Number of PCA components for density matrix construction.
+            Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
-            embedding inference. Used internally by permutation testing for performance.
+            embedding inference. Used internally by permutation testing.
+        _fitted_pca: Optional pre-fitted PCA object. Used internally by permutation
+            testing to ensure all permutations share the same basis.
 
     Returns:
         Quantum relative entropy (non-negative, can be np.inf)
-
-    Notes:
-        The QRE can be infinite if the density matrices have non-overlapping
-        support. This implementation uses an eigenvalue-based approximation
-        that assumes the matrices are approximately diagonal in the same basis.
     """
     from .quantum_metrics import (
         compute_pip_matrix,
         normalize_to_density_matrix,
         quantum_relative_entropy,
+        pca_density_matrix,
+        fit_pca,
     )
 
     if _precomputed_embeddings is not None:
@@ -736,10 +767,19 @@ def quantum_relative_entropy_test(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    pip1 = compute_pip_matrix(embeddings1)
-    pip2 = compute_pip_matrix(embeddings2)
-    rho1 = normalize_to_density_matrix(pip1)
-    rho2 = normalize_to_density_matrix(pip2)
+    if pca_k is not None:
+        if _fitted_pca is not None:
+            pca = _fitted_pca
+        else:
+            combined = np.concatenate([embeddings1, embeddings2], axis=0)
+            pca = fit_pca(combined, k=pca_k)
+        rho1 = pca_density_matrix(embeddings1, pca)
+        rho2 = pca_density_matrix(embeddings2, pca)
+    else:
+        pip1 = compute_pip_matrix(embeddings1)
+        pip2 = compute_pip_matrix(embeddings2)
+        rho1 = normalize_to_density_matrix(pip1)
+        rho2 = normalize_to_density_matrix(pip2)
 
     if symmetric:
         qre_forward = quantum_relative_entropy(rho1, rho2)
@@ -953,6 +993,7 @@ IMPLEMENTED_TESTS = {
     "mmd_hamming": mmd_hamming,
     "mmd_kspectrum": mmd_kspectrum,
     "mmd_all_subsequences": mmd_all_subsequences,
+    "quantum_trace_distance": quantum_trace_distance,
     "quantum_von_neumann_divergence": quantum_von_neumann_divergence,
     "quantum_relative_entropy": quantum_relative_entropy_test,
 }

@@ -19,6 +19,7 @@ import numpy as np
 from model_equality_testing.dataset import load_distribution
 from model_equality_testing.algorithm import run_two_sample_test
 from model_equality_testing.tests import (
+    quantum_trace_distance,
     quantum_von_neumann_divergence,
     quantum_relative_entropy_test,
     mmd_hamming,
@@ -47,7 +48,7 @@ def sample_distribution(
     return dist.sample(n=n_samples)
 
 
-def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2", b=100):
+def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2", b=100, pca_k=50):
     """Compute all quantum metrics with timing and statistical calibration.
 
     Args:
@@ -55,44 +56,57 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
         sample2: Second CompletionSample
         embedding_model: Name of SBERT model to use
         b: Number of permutations for p-value computation
+        pca_k: Number of PCA components for density matrix construction
 
     Returns:
         Dict mapping metric name to (statistic, pvalue, elapsed_time)
     """
     results = {}
 
-    print("  Computing quantum metrics with permutation tests...")
+    print(f"  Computing quantum metrics with permutation tests (PCA k={pca_k})...")
 
-    # Von Neumann entropy divergence with permutation p-value
+    # Trace distance
+    with Stopwatch() as sw:
+        pvalue, td = run_two_sample_test(
+            sample1, sample2,
+            stat_type="quantum_trace_distance",
+            pvalue_type="permutation_pvalue",
+            b=b,
+            embedding_model=embedding_model,
+            pca_k=pca_k,
+        )
+    results["Trace Distance"] = (td, pvalue, sw.time)
+    print(f"    - Trace distance: {td:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+
+    # Von Neumann entropy divergence
     with Stopwatch() as sw:
         pvalue, entropy_div = run_two_sample_test(
             sample1, sample2,
             stat_type="quantum_von_neumann_divergence",
             pvalue_type="permutation_pvalue",
             b=b,
-            embedding_model=embedding_model
+            embedding_model=embedding_model,
+            pca_k=pca_k,
         )
     results["Von Neumann Divergence"] = (entropy_div, pvalue, sw.time)
     print(f"    - Von Neumann divergence: {entropy_div:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
-    # Quantum relative entropy (symmetric) - DISABLED due to rank mismatch issues
-    # Consistently returns np.inf when rank(ρ) > rank(σ), which occurs frequently
-    # with finite sample sizes. Needs further investigation or larger sample sizes.
-    #
-    # with Stopwatch() as sw:
-    #     pvalue, qre = run_two_sample_test(
-    #         sample1, sample2,
-    #         stat_type="quantum_relative_entropy",
-    #         pvalue_type="permutation_pvalue",
-    #         b=b,
-    #         embedding_model=embedding_model,
-    #         symmetric=True
-    #     )
-    # results["QRE (symmetric)"] = (qre, pvalue, sw.time)
-    # if qre == np.inf:
-    #     print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
-    # else:
-    #     print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    # Quantum relative entropy (symmetric)
+    with Stopwatch() as sw:
+        pvalue, qre = run_two_sample_test(
+            sample1, sample2,
+            stat_type="quantum_relative_entropy",
+            pvalue_type="permutation_pvalue",
+            b=b,
+            embedding_model=embedding_model,
+            pca_k=pca_k,
+            symmetric=True,
+        )
+    results["QRE (symmetric)"] = (qre, pvalue, sw.time)
+    if qre == np.inf:
+        print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    else:
+        print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
     return results
 
@@ -119,12 +133,16 @@ def compute_classical_metrics(sample1, sample2):
     results["MMD (Hamming)"] = (mmd_stat, pvalue, sw.time)
     print(f"    - MMD (Hamming): {mmd_stat:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
 
-    # VADER K-S
+    # VADER K-S (analytical p-value from scipy.stats.ks_2samp)
     try:
+        from model_equality_testing.features import get_vader_scores
+        from scipy.stats import ks_2samp
         with Stopwatch() as sw:
-            vader_stat = two_sample_vader_ks(sample1, sample2)
-        results["VADER K-S"] = (vader_stat, None, sw.time)
-        print(f"    - VADER K-S: {vader_stat:.6f} (took {sw.time:.2f}s)")
+            scores1 = get_vader_scores(sample1)
+            scores2 = get_vader_scores(sample2)
+            vader_stat, vader_pvalue = ks_2samp(scores1, scores2)
+        results["VADER K-S"] = (vader_stat, vader_pvalue, sw.time)
+        print(f"    - VADER K-S: {vader_stat:.6f}, p={vader_pvalue:.4f} (took {sw.time:.2f}s)")
     except ImportError:
         print("    - VADER K-S: Skipped (vaderSentiment not installed)")
         results["VADER K-S"] = (None, None, 0.0)
@@ -144,6 +162,8 @@ def run_comparison(
     root_dir: str = "./data",
     embedding_model: str = "all-mpnet-base-v2",
     b: int = 100,
+    pca_k: int = 50,
+    prompt_ids_b: Dict[str, List[int]] = None,
 ):
     """Run full comparison suite on a pair of distributions.
 
@@ -152,31 +172,39 @@ def run_comparison(
         model_b: Second model name
         source_a: Source for model A (fp32, int8, etc.)
         source_b: Source for model B
-        prompt_ids: Dictionary mapping dataset names to prompt ID lists
+        prompt_ids: Dictionary mapping dataset names to prompt ID lists (used for sample A, and sample B if prompt_ids_b is None)
         L: Completion length
         n_samples: Number of samples per distribution
         label: Descriptive label for this comparison
         root_dir: Root directory for dataset
         embedding_model: SBERT model name
         b: Number of permutations for p-value computation
+        pca_k: Number of PCA components for density matrix construction
+        prompt_ids_b: Optional separate prompt IDs for sample B (for prompt comparison mode)
     """
+    prompt_ids_for_b = prompt_ids_b if prompt_ids_b is not None else prompt_ids
+
     print(f"\n{'='*80}")
     print(f"{label}")
     print(f"  Model A: {model_a} [{source_a}]")
     print(f"  Model B: {model_b} [{source_b}]")
-    print(f"  Samples: {n_samples}, Prompts: {prompt_ids}")
-    print(f"  Permutations: {b}")
+    if prompt_ids_b is not None:
+        print(f"  Prompts A: {prompt_ids}")
+        print(f"  Prompts B: {prompt_ids_b}")
+    else:
+        print(f"  Prompts: {prompt_ids}")
+    print(f"  Samples: {n_samples}, Permutations: {b}")
     print(f"{'='*80}\n")
 
     # Load samples
     print("Loading distributions and sampling...")
     with Stopwatch() as sw:
         samp_a = sample_distribution(model_a, prompt_ids, L, source_a, n_samples, root_dir)
-        samp_b = sample_distribution(model_b, prompt_ids, L, source_b, n_samples, root_dir)
+        samp_b = sample_distribution(model_b, prompt_ids_for_b, L, source_b, n_samples, root_dir)
     print(f"  Loaded in {sw.time:.2f}s\n")
 
     # Compute metrics
-    quantum_results = compute_quantum_metrics(samp_a, samp_b, embedding_model=embedding_model, b=b)
+    quantum_results = compute_quantum_metrics(samp_a, samp_b, embedding_model=embedding_model, b=b, pca_k=pca_k)
     print()
     classical_results = compute_classical_metrics(samp_a, samp_b)
 
@@ -251,12 +279,44 @@ def main():
         default=100,
         help="Number of permutations for p-value computation (default: 100)"
     )
+    parser.add_argument(
+        "--pca_k",
+        type=int,
+        default=50,
+        help="Number of PCA components for density matrix construction (default: 50)"
+    )
+    parser.add_argument(
+        "--prompt_comparison",
+        nargs=2,
+        type=int,
+        metavar=("PROMPT_A", "PROMPT_B"),
+        help="Compare two different prompts on the same model/source (positive control)"
+    )
 
     args = parser.parse_args()
 
     prompt_ids = {args.dataset: [int(pid) for pid in args.prompts]}
 
-    if args.run_suite:
+    if args.prompt_comparison:
+        prompt_a, prompt_b = args.prompt_comparison
+        prompt_ids_a = {args.dataset: [prompt_a]}
+        prompt_ids_b = {args.dataset: [prompt_b]}
+        run_comparison(
+            model_a=args.model_a,
+            model_b=args.model_a,
+            source_a=args.source_a,
+            source_b=args.source_a,
+            prompt_ids=prompt_ids_a,
+            prompt_ids_b=prompt_ids_b,
+            L=args.L,
+            n_samples=args.samples,
+            label=f"Prompt Comparison: prompt {prompt_a} vs prompt {prompt_b} ({args.source_a})",
+            root_dir=args.root_dir,
+            embedding_model=args.embedding_model,
+            b=args.b,
+            pca_k=args.pca_k,
+        )
+    elif args.run_suite:
         print("\n" + "="*80)
         print("QUANTUM METRICS VALIDATION SUITE")
         print("="*80)
@@ -274,6 +334,7 @@ def main():
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
             b=args.b,
+            pca_k=args.pca_k,
         )
 
         # Case 2: Same model, different source (should show MODERATE differences)
@@ -289,6 +350,7 @@ def main():
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
             b=args.b,
+            pca_k=args.pca_k,
         )
 
         # Case 3: Different models (should show LARGE differences)
@@ -304,6 +366,7 @@ def main():
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
             b=args.b,
+            pca_k=args.pca_k,
         )
     else:
         # Single comparison
@@ -319,6 +382,7 @@ def main():
             root_dir=args.root_dir,
             embedding_model=args.embedding_model,
             b=args.b,
+            pca_k=args.pca_k,
         )
 
 

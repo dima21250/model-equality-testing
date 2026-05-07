@@ -37,7 +37,8 @@ sentiment = [
     "vaderSentiment"
 ]
 quantum = [
-    "sentence-transformers>=2.2.0"
+    "sentence-transformers>=2.2.0",
+    "scikit-learn>=1.0"
 ]
 
 [project.urls]

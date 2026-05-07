@@ -236,6 +236,7 @@ def two_sample_permutation_pvalue(
 
 
 QUANTUM_STAT_TYPES = frozenset({
+    "quantum_trace_distance",
     "quantum_von_neumann_divergence",
     "quantum_relative_entropy",
 })
@@ -254,7 +255,8 @@ def two_sample_embedding_permutation_pvalue(
 
     Pre-computes SBERT embeddings once for the combined sample pool, then
     permutes embedding indices on each iteration instead of re-embedding.
-    This gives ~100x speedup over the generic permutation test.
+    When pca_k is set, PCA is fit once on the combined pool so all
+    permutations share the same basis.
 
     Args:
         sample1: First CompletionSample
@@ -262,19 +264,26 @@ def two_sample_embedding_permutation_pvalue(
         b: Number of permutations
         plot: Whether to plot the empirical distribution
         return_stats: Whether to return raw statistics
-        stat_type: Must be a quantum stat type (quantum_trace_distance, etc.)
-        **kwargs: Passed to the test function (embedding_model, batch_size, symmetric, etc.)
+        stat_type: Must be a quantum stat type
+        **kwargs: Passed to the test function (embedding_model, batch_size, pca_k, etc.)
     """
     from .embeddings import embed_sample
 
     embedding_model = kwargs.pop("embedding_model", "all-mpnet-base-v2")
     batch_size = kwargs.pop("batch_size", 32)
+    pca_k = kwargs.get("pca_k", 50)
 
     # Embed all samples ONCE
     embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
     embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
     all_embeddings = np.concatenate([embeddings1, embeddings2], axis=0)
     n1 = len(embeddings1)
+
+    # Fit PCA once on the combined pool so all permutations share the same basis
+    fitted_pca = None
+    if pca_k is not None:
+        from .quantum_metrics import fit_pca
+        fitted_pca = fit_pca(all_embeddings, k=pca_k)
 
     stats = []
     for _ in tqdm.tqdm(range(b), desc="Permutation bootstrap"):
@@ -285,6 +294,7 @@ def two_sample_embedding_permutation_pvalue(
         stat = IMPLEMENTED_TESTS[stat_type](
             sample1, sample2,
             _precomputed_embeddings=(perm_emb1, perm_emb2),
+            _fitted_pca=fitted_pca,
             **kwargs,
         )
         stats.append(stat)
