@@ -63,7 +63,10 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
     """
     results = {}
 
-    print(f"  Computing quantum metrics with permutation tests (PCA k={pca_k})...")
+    if pca_k == 0:
+        print(f"  Computing quantum metrics with permutation tests (full 768D)...")
+    else:
+        print(f"  Computing quantum metrics with permutation tests (PCA k={pca_k})...")
 
     # Trace distance
     with Stopwatch() as sw:
@@ -283,7 +286,7 @@ def main():
         "--pca_k",
         type=int,
         default=50,
-        help="Number of PCA components for density matrix construction (default: 50)"
+        help="Number of PCA components for density matrix construction (default: 50). Set to 0 for full 768D density matrices."
     )
     parser.add_argument(
         "--prompt_comparison",

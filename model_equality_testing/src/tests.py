@@ -593,10 +593,10 @@ def quantum_trace_distance(
     Constructs density matrices from embeddings and computes the quantum
     trace distance: D(ρ_A, ρ_B) = 0.5 * Tr(|ρ_A - ρ_B|).
 
-    When pca_k is set (default 50), embeddings are projected to a shared
+    When pca_k > 0 (default 50), embeddings are projected to a shared
     k-dimensional PCA basis and density matrices are k×k covariance matrices.
-    This fixes the Hilbert space mismatch and sample-size dependence of the
-    legacy NxN Gram matrix approach.
+    When pca_k == 0, full d×d density matrices are constructed from
+    unit-normalized embeddings (no dimensionality reduction).
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
@@ -604,6 +604,7 @@ def quantum_trace_distance(
         embedding_model: Name of sentence-transformers model
         batch_size: Batch size for embedding inference
         pca_k: Number of PCA components for density matrix construction.
+            Set to 0 for full-dimensional (768×768) density matrices.
             Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
             embedding inference. Used internally by permutation testing.
@@ -619,6 +620,7 @@ def quantum_trace_distance(
         trace_distance,
         pca_density_matrix,
         fit_pca,
+        full_density_matrix,
     )
 
     if _precomputed_embeddings is not None:
@@ -628,7 +630,7 @@ def quantum_trace_distance(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    if pca_k is not None:
+    if pca_k is not None and pca_k > 0:
         if _fitted_pca is not None:
             pca = _fitted_pca
         else:
@@ -636,6 +638,9 @@ def quantum_trace_distance(
             pca = fit_pca(combined, k=pca_k)
         rho1 = pca_density_matrix(embeddings1, pca)
         rho2 = pca_density_matrix(embeddings2, pca)
+    elif pca_k == 0:
+        rho1 = full_density_matrix(embeddings1)
+        rho2 = full_density_matrix(embeddings2)
     else:
         pip1 = compute_pip_matrix(embeddings1)
         pip2 = compute_pip_matrix(embeddings2)
@@ -658,10 +663,10 @@ def quantum_von_neumann_divergence(
 
     Computes |S(ρ_A) - S(ρ_B)| where S is the von Neumann entropy.
 
-    When pca_k is set (default 50), embeddings are projected to a shared
+    When pca_k > 0 (default 50), embeddings are projected to a shared
     k-dimensional PCA basis and density matrices are constructed as k×k
-    covariance matrices. This fixes the Hilbert space mismatch in the
-    NxN Gram matrix approach and makes the metric sample-size independent.
+    covariance matrices. When pca_k == 0, full d×d density matrices are
+    constructed from unit-normalized embeddings (no dimensionality reduction).
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
@@ -669,6 +674,7 @@ def quantum_von_neumann_divergence(
         embedding_model: Name of sentence-transformers model
         batch_size: Batch size for embedding inference
         pca_k: Number of PCA components for density matrix construction.
+            Set to 0 for full-dimensional (768×768) density matrices.
             Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
             embedding inference. Used internally by permutation testing.
@@ -684,6 +690,7 @@ def quantum_von_neumann_divergence(
         von_neumann_entropy,
         pca_density_matrix,
         fit_pca,
+        full_density_matrix,
     )
 
     if _precomputed_embeddings is not None:
@@ -693,7 +700,7 @@ def quantum_von_neumann_divergence(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    if pca_k is not None:
+    if pca_k is not None and pca_k > 0:
         if _fitted_pca is not None:
             pca = _fitted_pca
         else:
@@ -701,6 +708,9 @@ def quantum_von_neumann_divergence(
             pca = fit_pca(combined, k=pca_k)
         rho1 = pca_density_matrix(embeddings1, pca)
         rho2 = pca_density_matrix(embeddings2, pca)
+    elif pca_k == 0:
+        rho1 = full_density_matrix(embeddings1)
+        rho2 = full_density_matrix(embeddings2)
     else:
         pip1 = compute_pip_matrix(embeddings1)
         pip2 = compute_pip_matrix(embeddings2)
@@ -731,10 +741,9 @@ def quantum_relative_entropy_test(
     If symmetric=True, computes the symmetrized version:
         S(ρ_A || ρ_B) + S(ρ_B || ρ_A)
 
-    When pca_k is set (default 50), both density matrices are constructed
-    in the same k-dimensional PCA basis. This makes the eigenvalue-pairing
-    approximation valid (shared eigenbasis) and eliminates the rank mismatch
-    issues that caused infinity values with the NxN Gram matrix approach.
+    When pca_k > 0 (default 50), both density matrices are constructed
+    in the same k-dimensional PCA basis. When pca_k == 0, full d×d density
+    matrices are constructed from unit-normalized embeddings.
 
     Args:
         sample1: First CompletionSample with unicode codepoint completions
@@ -743,6 +752,7 @@ def quantum_relative_entropy_test(
         batch_size: Batch size for embedding inference
         symmetric: If True, return symmetric QRE (default: True)
         pca_k: Number of PCA components for density matrix construction.
+            Set to 0 for full-dimensional (768×768) density matrices.
             Set to None to use the legacy NxN Gram matrix approach.
         _precomputed_embeddings: Optional (embeddings1, embeddings2) tuple to skip
             embedding inference. Used internally by permutation testing.
@@ -758,6 +768,7 @@ def quantum_relative_entropy_test(
         quantum_relative_entropy,
         pca_density_matrix,
         fit_pca,
+        full_density_matrix,
     )
 
     if _precomputed_embeddings is not None:
@@ -767,7 +778,7 @@ def quantum_relative_entropy_test(
         embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
         embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
 
-    if pca_k is not None:
+    if pca_k is not None and pca_k > 0:
         if _fitted_pca is not None:
             pca = _fitted_pca
         else:
@@ -775,6 +786,9 @@ def quantum_relative_entropy_test(
             pca = fit_pca(combined, k=pca_k)
         rho1 = pca_density_matrix(embeddings1, pca)
         rho2 = pca_density_matrix(embeddings2, pca)
+    elif pca_k == 0:
+        rho1 = full_density_matrix(embeddings1)
+        rho2 = full_density_matrix(embeddings2)
     else:
         pip1 = compute_pip_matrix(embeddings1)
         pip2 = compute_pip_matrix(embeddings2)

@@ -280,8 +280,9 @@ def two_sample_embedding_permutation_pvalue(
     n1 = len(embeddings1)
 
     # Fit PCA once on the combined pool so all permutations share the same basis
+    # pca_k=0 means full-space mode (no PCA), pca_k>0 means PCA with k components
     fitted_pca = None
-    if pca_k is not None:
+    if pca_k is not None and pca_k > 0:
         from .quantum_metrics import fit_pca
         fitted_pca = fit_pca(all_embeddings, k=pca_k)
 

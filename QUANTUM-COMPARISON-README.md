@@ -182,6 +182,30 @@ The default k=50 is a standard choice in the embedding literature, capturing rou
 
 To verify the choice is appropriate for your data, check `pca.explained_variance_ratio_.sum()` (available programmatically via `fit_pca()` in `quantum_metrics.py`).
 
+### Full-Space Mode (`--pca_k 0`)
+
+As an alternative to PCA, pass `--pca_k 0` to construct full d×d density matrices (768×768 for all-mpnet-base-v2) from unit-normalized embeddings:
+
+```
+ρ = (1/N) Σ_i |ψ_i⟩⟨ψ_i|    where |ψ_i⟩ = e_i / ||e_i||
+```
+
+This preserves all dimensions of the embedding space with no information loss from projection. Both samples' density matrices live in the same R^d, fixing the Hilbert space mismatch without requiring dimensionality reduction.
+
+Trade-offs vs PCA (k=50):
+- **Preserves full structure**: No variance is discarded. Useful for validating that PCA isn't masking real effects.
+- **Slower eigendecomposition**: 768×768 vs 50×50 matrices. Each permutation iteration takes longer, though still fast relative to embedding inference.
+- **No regularization**: All 768 dimensions are retained, including low-variance noise dimensions. This can make the density matrix more sensitive to sampling noise, potentially reducing statistical power.
+
+```bash
+# Full-space mode
+python quantum_comparison.py --pca_k 0 --prompts 0 --samples 200
+
+# Compare side-by-side with PCA
+python quantum_comparison.py --pca_k 50 --prompts 0 --samples 200
+python quantum_comparison.py --pca_k 0 --prompts 0 --samples 200
+```
+
 ## Technical Details
 
 ### Density Matrix Construction
@@ -204,4 +228,4 @@ SBERT embedding inference (the expensive step) runs once on the combined pool. P
 
 ### Legacy Mode
 
-To use the original N x N Gram matrix approach (not recommended), pass `--pca_k 0`. Note that this reintroduces the Hilbert space mismatch and sample-size dependence documented in `INITIAL-RESULTS.md`.
+The original N x N Gram matrix approach is available programmatically by passing `pca_k=None` to the test functions. It is not accessible from the CLI. This is intentional -- the Gram matrix approach has known issues (Hilbert space mismatch, sample-size dependence) documented in `INITIAL-RESULTS.md`.

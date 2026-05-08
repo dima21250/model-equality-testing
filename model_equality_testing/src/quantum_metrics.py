@@ -139,6 +139,31 @@ def fit_pca(
     return pca
 
 
+def full_density_matrix(embeddings: np.ndarray) -> np.ndarray:
+    """Construct a d×d density matrix from unit-normalized embeddings.
+
+    Each embedding is L2-normalized to a unit vector |ψ_i⟩, then the density
+    matrix is computed as:
+        ρ = (1/N) Σ_i |ψ_i⟩⟨ψ_i| = E_norm.T @ E_norm / N
+
+    This preserves all d dimensions of the embedding space (no PCA projection),
+    so both samples' density matrices live in the same R^d. The resulting matrix
+    is d×d (e.g., 768×768 for all-mpnet-base-v2), positive semidefinite, and
+    has unit trace by construction (since each |ψ_i⟩ has unit norm).
+
+    Args:
+        embeddings: (N, d) array of embeddings
+
+    Returns:
+        rho: (d, d) density matrix with Tr(ρ) = 1
+    """
+    norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    norms = np.maximum(norms, 1e-10)
+    E_norm = embeddings / norms
+    rho = E_norm.T @ E_norm / len(E_norm)
+    return rho
+
+
 def trace_distance(rho_a: np.ndarray, rho_b: np.ndarray) -> float:
     """Compute trace distance between two density matrices.
 
