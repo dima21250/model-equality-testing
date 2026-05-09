@@ -195,7 +195,39 @@ Despite smaller statistics, the permutation tests still correctly identify trace
 
 The full-space mode carries a substantial computational cost: QRE permutation testing took ~15 minutes at 768D vs ~30 seconds at k=50, roughly a 30x slowdown from eigendecomposing 768×768 matrices instead of 50×50.
 
-This comparison validates the PCA k=50 approach: the full embedding space does not reveal effects that PCA misses, while PCA produces larger effect sizes and runs much faster. The concern that PCA projection might mask real structure is not borne out empirically.
+For Llama, this validates the PCA k=50 approach: the full embedding space does not reveal effects that PCA misses, while PCA produces larger effect sizes and runs much faster.
+
+#### Mistral-7B: PCA k=50 vs Full 768D
+
+Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
+
+| Metric | PCA k=50 | Full 768D |
+|--------|----------|-----------|
+| MMD (Hamming) | 0.001, p < 0.0002 | 0.000, p < 0.0002 |
+| VADER K-S | 0.056, p=0.0869 | 0.027, p=0.8595 |
+| Trace distance | 0.109, p=0.0020 | 0.092, p < 0.0002 |
+| Von Neumann div | **0.007, p=0.7794** | **0.097, p < 0.0002** |
+| QRE (symmetric) | **0.001, p=0.8764** | **0.003, p=0.0008** |
+
+**Interpretation**: Unlike Llama, the two approaches **disagree qualitatively** for Mistral. Under PCA k=50, Mistral appeared robust to quantization -- only trace distance was marginally significant, and both von Neumann divergence and QRE were solidly non-significant. Under full 768D, von Neumann divergence flips from non-significant (p=0.78) to highly significant (p < 0.0002), with the statistic jumping from 0.007 to 0.097. QRE also becomes significant (p=0.0008).
+
+This means the tail dimensions that PCA discards carry information about Mistral's diversity change under quantization -- information that is absent (or undetectable) in the top 50 principal components. This partially vindicates the concern that PCA projection might mask real effects, though the effect is model-dependent: Llama shows no such discrepancy.
+
+#### Null baseline: Full 768D, Mistral-7B fp32 vs fp32
+
+n=1000, b=5000. Both samples drawn from the same fp32 source.
+
+| Metric | Full 768D (null) | Full 768D (fp32 vs int8) |
+|--------|------------------|--------------------------|
+| MMD (Hamming) | -0.000, p=0.7500 | 0.000, p < 0.0002 |
+| VADER K-S | 0.025, p=0.9137 | 0.027, p=0.8595 |
+| Trace distance | 0.057, p=0.5706 | 0.092, p < 0.0002 |
+| Von Neumann div | 0.001, p=0.9632 | 0.097, p < 0.0002 |
+| QRE (symmetric) | 0.002, p=0.0736 | 0.003, p=0.0008 |
+
+The null is clean -- all metrics non-significant -- confirming that the Mistral full-space results are not false positives. The von Neumann divergence contrast is dramatic: 0.001 under the null vs 0.097 under quantization, an ~80x increase. This confirms that INT8 quantization genuinely alters Mistral's semantic diversity structure in ways that are only visible in the tail dimensions of the embedding space.
+
+The PCA k=50 conclusion that "Mistral is fully robust to quantization" must be revised: Mistral preserves the semantic structure captured by the top 50 principal components, but quantization perturbs the fine-grained diversity structure encoded in the remaining dimensions. Whether this matters in practice depends on what those tail dimensions represent -- but the effect is statistically real.
 
 #### Null baseline: Full 768D, Llama-3-8B fp32 vs fp32
 
@@ -219,18 +251,20 @@ The central insight from these experiments is that **detection** and **character
 
 **MMD Hamming is the most sensitive detector of change.** It operates at the token level and catches any distributional shift, no matter how small or semantically irrelevant. In every context tested -- quantization, different prompts, cross-language, cross-model -- MMD is significant. It answers: "Did something change?" But it cannot tell you whether the change matters.
 
-**The quantum metrics tell you whether to care.** They operate at the semantic level and characterize the *nature* of the change. The Mistral vs Llama quantization comparison makes this most concrete:
+**The quantum metrics tell you whether to care.** They operate at the semantic level and characterize the *nature* of the change. The Llama quantization comparison illustrates this clearly:
 
-| Metric | Llama (fp32 vs int8) | Mistral (fp32 vs int8) |
-|--------|---------------------|----------------------|
-| MMD Hamming | 0.002, p < 0.0002 | 0.001, p < 0.0002 |
-| Trace distance | 0.143, p < 0.0002 | 0.109, p=0.0020 |
-| QRE (symmetric) | 0.020, p < 0.0002 | 0.001, p=0.8764 |
-| Von Neumann div | 0.029, p=0.3244 | 0.007, p=0.7794 |
+| Metric | Llama fp32 vs fp32 (null) | Llama fp32 vs int8 |
+|--------|--------------------------|-------------------|
+| MMD Hamming | -0.000, p=0.9300 | 0.002, p < 0.0002 |
+| Trace distance | 0.086, p=0.9768 | 0.143, p < 0.0002 |
+| QRE (symmetric) | 0.003, p=0.5992 | 0.020, p < 0.0002 |
+| Von Neumann div | 0.008, p=0.7760 | 0.029, p=0.3244 |
 
-MMD flags both models equally -- both have detectably different token distributions under quantization. But the quantum metrics reveal that the semantic impact is model-dependent: Llama loses a small amount of semantic information (QRE significant), while Mistral loses none (QRE non-significant). Without the quantum metrics, you would know that quantization changes the output but not whether the change is semantically meaningful. With them, you can distinguish a change that matters from one that doesn't.
+MMD detects a token-level change. The quantum metrics characterize it: trace distance and QRE show a small semantic shift, but von Neumann divergence remains non-significant -- the diversity structure is preserved. Without the quantum metrics, you would know that quantization changes the output but not whether the change is semantically meaningful.
 
-This makes the two-tier framework essential, not redundant. MMD alone would raise alarms about quantization that are potentially unjustified (as in Mistral's case). Quantum metrics alone would miss the token-level change entirely at small sample sizes. Together, they provide a complete picture: MMD for detection, quantum metrics for characterization.
+The picture becomes richer when dimensionality matters. Under PCA k=50, Mistral appeared fully robust to quantization (QRE non-significant, von Neumann non-significant). But full 768D density matrices reveal a diversity change (von Neumann 0.097, p < 0.0002) invisible to PCA -- the quantization effect lives in the tail dimensions that PCA discards. This demonstrates that the characterization depends on what dimensions of the embedding space you examine, and that the choice of density matrix construction is itself an interpretive decision.
+
+This makes the two-tier framework essential, not redundant. MMD alone would detect change without characterizing it. Quantum metrics alone would miss the token-level change at small sample sizes. Together -- and with attention to the density matrix construction -- they provide a complete picture: MMD for detection, quantum metrics for characterization, and the PCA/full-space comparison for understanding at what scale the semantic change occurs.
 
 ### What Each Quantum Metric Measures
 
@@ -242,11 +276,11 @@ The five contexts together reveal what each metric is sensitive to:
 | Von Neumann div | No | Yes | Only fires for cross-language (diversity structure change) |
 | QRE (symmetric) | Yes | Yes | Detects prompt and language differences; scales with effect size |
 
-**Von Neumann divergence** is the most selective metric. It is insensitive to token-level changes (quantization), insensitive to content differences within a language (different prompts), but highly sensitive to diversity structure changes (cross-language). Its non-significance for fp32 vs int8 -- even at n=1000 with b=5000 -- is a meaningful null result: quantization preserves the semantic diversity of the output distribution. Its non-significance for same-language prompt pairs confirms it measures spread, not content. Its dramatic significance for cross-language comparison (0.614) confirms it fires when diversity genuinely differs.
+**Von Neumann divergence** is the most selective metric. It is insensitive to content differences within a language (different prompts), but highly sensitive to diversity structure changes (cross-language, von Neumann 0.614). Its behavior under quantization depends on the density matrix construction: under PCA k=50 it is non-significant for both Llama and Mistral, suggesting diversity is preserved in the top principal components. Under full 768D, it remains non-significant for Llama but becomes highly significant for Mistral (0.097, p < 0.0002), revealing a diversity change in the tail dimensions. Its non-significance for same-language prompt pairs confirms it measures spread, not content.
 
 **Trace distance and QRE** are sensitive to both content and diversity differences. At n=200 they show non-significance for fp32 vs int8, but at n=1000 they detect a small semantic shift. This means quantization does slightly perturb the semantic distribution, but the effect is subtle. Their strong significance for different prompts (trace distance ~0.47) and cross-language comparisons (QRE jumps from 0.049 to 0.217) confirms they can detect real semantic differences at multiple scales.
 
-**Together**, the three metrics paint a precise picture: INT8 quantization introduces a small, model-dependent semantic perturbation (trace distance significant for both Llama and Mistral; QRE significant for Llama but not Mistral) that does not affect the overall diversity or character of the outputs (von Neumann divergence non-significant for both models). The magnitude of the quantization effect (trace distance 0.11-0.14) is modest compared to a same-language content difference (trace distance ~0.47) or cross-language difference (von Neumann divergence 0.614). The degree of perturbation varies by model architecture.
+**Together**, the three metrics paint a precise picture: INT8 quantization introduces a small, model-dependent semantic perturbation. The degree of perturbation depends on both the model architecture and the dimensionality of the analysis. In the top 50 principal components, Llama shows a small semantic shift (trace distance and QRE significant) while Mistral appears robust (only trace distance marginally significant). In the full embedding space, Mistral reveals a diversity change invisible to PCA (von Neumann divergence significant), while Llama's picture remains unchanged. The magnitude of the quantization effect (trace distance 0.09-0.14) is modest compared to a same-language content difference (trace distance ~0.47) or cross-language difference (von Neumann divergence 0.614).
 
 ## Technical Notes
 
