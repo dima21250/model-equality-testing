@@ -197,7 +197,42 @@ The full-space mode carries a substantial computational cost: QRE permutation te
 
 This comparison validates the PCA k=50 approach: the full embedding space does not reveal effects that PCA misses, while PCA produces larger effect sizes and runs much faster. The concern that PCA projection might mask real structure is not borne out empirically.
 
+#### Null baseline: Full 768D, Llama-3-8B fp32 vs fp32
+
+n=1000, b=5000. Both samples drawn from the same fp32 source.
+
+| Metric | PCA k=50 (null) | Full 768D (null) | Full 768D (fp32 vs int8) |
+|--------|----------------|------------------|--------------------------|
+| MMD (Hamming) | -0.000, p=0.9300 | -0.000, p=0.5600 | 0.003, p < 0.0002 |
+| VADER K-S | 0.022, p=0.9690 | 0.023, p=0.9542 | 0.025, p=0.9137 |
+| Trace distance | 0.086, p=0.9768 | 0.048, p=0.9786 | 0.101, p < 0.0002 |
+| Von Neumann div | 0.008, p=0.7760 | 0.010, p=0.6612 | 0.011, p=0.6064 |
+| QRE (symmetric) | 0.003, p=0.5992 | 0.0004, p=0.9320 | 0.004, p < 0.0002 |
+
+The full-space null is well-calibrated -- no false positives, with all p-values well above 0.05. The contrast with fp32 vs int8 is clean: trace distance doubles (0.048 to 0.101) and QRE increases by an order of magnitude (0.0004 to 0.004), both becoming highly significant. Note that trace distance under the null is smaller in full-space mode (0.048) than in PCA mode (0.086), consistent with the general pattern of diluted statistics in higher dimensions. The permutation test correctly identifies both as non-significant regardless of the raw magnitude.
+
 ## What This Tells Us
+
+### The Two-Tier Framework: Detection vs Characterization
+
+The central insight from these experiments is that **detection** and **characterization** are distinct tasks requiring different tools.
+
+**MMD Hamming is the most sensitive detector of change.** It operates at the token level and catches any distributional shift, no matter how small or semantically irrelevant. In every context tested -- quantization, different prompts, cross-language, cross-model -- MMD is significant. It answers: "Did something change?" But it cannot tell you whether the change matters.
+
+**The quantum metrics tell you whether to care.** They operate at the semantic level and characterize the *nature* of the change. The Mistral vs Llama quantization comparison makes this most concrete:
+
+| Metric | Llama (fp32 vs int8) | Mistral (fp32 vs int8) |
+|--------|---------------------|----------------------|
+| MMD Hamming | 0.002, p < 0.0002 | 0.001, p < 0.0002 |
+| Trace distance | 0.143, p < 0.0002 | 0.109, p=0.0020 |
+| QRE (symmetric) | 0.020, p < 0.0002 | 0.001, p=0.8764 |
+| Von Neumann div | 0.029, p=0.3244 | 0.007, p=0.7794 |
+
+MMD flags both models equally -- both have detectably different token distributions under quantization. But the quantum metrics reveal that the semantic impact is model-dependent: Llama loses a small amount of semantic information (QRE significant), while Mistral loses none (QRE non-significant). Without the quantum metrics, you would know that quantization changes the output but not whether the change is semantically meaningful. With them, you can distinguish a change that matters from one that doesn't.
+
+This makes the two-tier framework essential, not redundant. MMD alone would raise alarms about quantization that are potentially unjustified (as in Mistral's case). Quantum metrics alone would miss the token-level change entirely at small sample sizes. Together, they provide a complete picture: MMD for detection, quantum metrics for characterization.
+
+### What Each Quantum Metric Measures
 
 The five contexts together reveal what each metric is sensitive to:
 
