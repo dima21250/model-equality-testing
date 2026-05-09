@@ -173,9 +173,33 @@ Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, n=1000, b=5000. Both samples dr
 
 All metrics are non-significant under the null, confirming the permutation tests are well-calibrated. Note that trace distance is not zero under the null (0.089) -- there is always sampling noise in density matrix estimates. The permutation test correctly identifies this as non-significant, which is why raw statistics alone are uninterpretable without p-values.
 
+### Context 5: PCA k=50 vs Full 768D Density Matrices
+
+Does dimensionality reduction via PCA affect the conclusions?
+
+An alternative to PCA projection is to construct full d×d density matrices from unit-normalized embeddings: ρ = (1/N) Σ |ψ_i⟩⟨ψ_i|, where each embedding is L2-normalized. This preserves all 768 dimensions of the embedding space.
+
+Llama-3-8B-Instruct, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
+
+| Metric | PCA k=50 | Full 768D |
+|--------|----------|-----------|
+| MMD (Hamming) | 0.002, p < 0.0002 | 0.003, p < 0.0002 |
+| VADER K-S | 0.031, p=0.7228 | 0.025, p=0.9137 |
+| Trace distance | 0.143, p < 0.0002 | 0.101, p < 0.0002 |
+| Von Neumann div | 0.029, p=0.3244 | 0.011, p=0.6064 |
+| QRE (symmetric) | 0.020, p < 0.0002 | 0.004, p < 0.0002 |
+
+**Interpretation**: The two approaches produce qualitatively identical conclusions. All significance/non-significance calls agree. The raw statistics are uniformly smaller in full-space mode -- trace distance drops from 0.143 to 0.101, QRE from 0.020 to 0.004, von Neumann divergence from 0.029 to 0.011. This is expected: the 768D density matrices are rank ~200 (capped by the n=1000 sample size), so the signal is diluted across 568 zero-eigenvalue dimensions. PCA concentrates the signal into the 50 dimensions that carry the most variance, producing sharper effect sizes.
+
+Despite smaller statistics, the permutation tests still correctly identify trace distance and QRE as significant. The null distribution is diluted by the same factor, so p-values track. Von Neumann divergence is even further from significance in full-space mode (p=0.61 vs p=0.32), consistent with dilution reducing the apparent effect size without changing the conclusion.
+
+The full-space mode carries a substantial computational cost: QRE permutation testing took ~15 minutes at 768D vs ~30 seconds at k=50, roughly a 30x slowdown from eigendecomposing 768×768 matrices instead of 50×50.
+
+This comparison validates the PCA k=50 approach: the full embedding space does not reveal effects that PCA misses, while PCA produces larger effect sizes and runs much faster. The concern that PCA projection might mask real structure is not borne out empirically.
+
 ## What This Tells Us
 
-The four contexts together reveal what each metric is sensitive to:
+The five contexts together reveal what each metric is sensitive to:
 
 | Metric | Content shift? | Diversity shift? | Evidence |
 |--------|---------------|-----------------|----------|
@@ -191,7 +215,8 @@ The four contexts together reveal what each metric is sensitive to:
 
 ## Technical Notes
 
-- All density matrices are constructed via PCA projection (k=50) of SBERT embeddings to a shared basis, followed by covariance matrix normalization. This fixes the Hilbert space mismatch and sample-size dependence of the earlier NxN Gram matrix approach.
-- p-values are computed via permutation tests (b=100) with pre-computed embeddings for efficiency.
+- All density matrices are constructed via PCA projection (k=50) of SBERT embeddings to a shared basis, followed by covariance matrix normalization. This fixes the Hilbert space mismatch and sample-size dependence of the earlier NxN Gram matrix approach. A full 768D alternative (Context 5) validates that PCA does not mask real effects.
+- p-values are computed via permutation tests with pre-computed embeddings for efficiency.
 - The QRE uses an eigenvalue-pairing approximation that is valid when both density matrices share the PCA eigenbasis.
 - Explained variance at k=50 is typically ~40-50% of total variance in the embedding space.
+- Full-space density matrices (pca_k=0) are constructed from unit-normalized embeddings: ρ = E_norm.T @ E_norm / N, yielding d×d matrices where d is the embedding dimension (768 for all-mpnet-base-v2).
