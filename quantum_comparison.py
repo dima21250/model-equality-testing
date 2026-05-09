@@ -64,7 +64,7 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
     results = {}
 
     if pca_k == 0:
-        print(f"  Computing quantum metrics with permutation tests (full 768D)...")
+        print(f"  Computing quantum metrics with permutation tests (full space, no PCA)...")
     else:
         print(f"  Computing quantum metrics with permutation tests (PCA k={pca_k})...")
 
@@ -196,7 +196,8 @@ def run_comparison(
         print(f"  Prompts B: {prompt_ids_b}")
     else:
         print(f"  Prompts: {prompt_ids}")
-    print(f"  Samples: {n_samples}, Permutations: {b}")
+    density_mode = "full space (no PCA)" if pca_k == 0 else f"PCA k={pca_k}"
+    print(f"  Samples: {n_samples}, Permutations: {b}, Density matrix: {density_mode}")
     print(f"{'='*80}\n")
 
     # Load samples
