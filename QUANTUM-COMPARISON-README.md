@@ -206,6 +206,42 @@ python quantum_comparison.py --pca_k 50 --prompts 0 --samples 200
 python quantum_comparison.py --pca_k 0 --prompts 0 --samples 200
 ```
 
+## Reproduction Scripts
+
+The `runs/` directory contains individual shell scripts to reproduce each experimental result. Each script captures full output (stdout + stderr) to a timestamped file in `runs/results/`.
+
+```bash
+# Run a single experiment
+bash runs/01_llama_fp32_vs_int8_pca50.sh
+
+# Run all experiments sequentially
+for script in runs/*.sh; do bash "$script"; done
+```
+
+Output files are named `runs/results/<script>_<YYYYMMDD_HHMMSS>.txt`.
+
+### PCA k=50 experiments
+
+| Script | Comparison | Expected outcome |
+|--------|-----------|-----------------|
+| `01_llama_fp32_vs_int8_pca50.sh` | Llama fp32 vs int8 | Quantum metrics mostly non-significant |
+| `02_llama_null_pca50.sh` | Llama fp32 vs fp32 (null) | All metrics non-significant |
+| `03_llama_prompt0_vs_prompt5_pca50.sh` | Llama prompt 0 vs 5 | Content metrics significant, VN divergence not |
+| `04_llama_en_vs_ru_pca50.sh` | Llama EN vs RU | All metrics significant, VN divergence fires strongly |
+| `05_mistral_fp32_vs_int8_pca50.sh` | Mistral fp32 vs int8 | Quantum metrics mostly non-significant |
+| `06_mistral_null_pca50.sh` | Mistral fp32 vs fp32 (null) | All metrics non-significant |
+
+### Full-space experiments (pca_k=0)
+
+| Script | Comparison | Expected outcome |
+|--------|-----------|-----------------|
+| `07_llama_fp32_vs_int8_full.sh` | Llama fp32 vs int8 | Similar to PCA; validates PCA isn't masking effects |
+| `08_llama_null_full.sh` | Llama fp32 vs fp32 (null) | All metrics non-significant |
+| `09_mistral_fp32_vs_int8_full.sh` | Mistral fp32 vs int8 | VN divergence may become significant (PCA masks this) |
+| `10_mistral_null_full.sh` | Mistral fp32 vs fp32 (null) | All metrics non-significant |
+
+All scripts use: n=1000 samples, b=5000 permutations, wikipedia_en prompt 0, embedding model all-mpnet-base-v2.
+
 ## Technical Details
 
 ### Density Matrix Construction
