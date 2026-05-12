@@ -43,14 +43,16 @@ At this sample size, quantum metrics show no significant semantic difference.
 | Metric | Statistic | p-value | Detects difference? |
 |--------|-----------|---------|-------------------|
 | **MMD (Hamming)** | 0.002 | < 0.0002 | Yes |
-| **VADER K-S** | 0.031 | 0.7228 | No |
-| **Trace Distance** | 0.143 | < 0.0002 | Yes |
-| **Von Neumann Div** | 0.029 | 0.3244 | No |
-| **QRE (symmetric)** | 0.020 | < 0.0002 | Yes |
+| **VADER K-S** | 0.024 | 0.9358 | No |
+| **Trace Distance** | 0.154 | < 0.0002 | Yes |
+| **Von Neumann Div** | 0.044 | 0.1228 | No |
+| **QRE (symmetric)** | 0.028 | < 0.0002 | Yes |
+
+*Reproduced via `runs/01_llama_fp32_vs_int8_pca50.sh` using the unified permutation loop.*
 
 With more data and permutations, a more nuanced picture emerges: trace distance and QRE detect a small but real semantic shift, while von Neumann divergence and VADER K-S remain non-significant.
 
-**Interpretation**: INT8 quantization slightly shifts *where* the semantic distribution sits in embedding space (trace distance, QRE significant), but preserves its *shape* and *spread* (von Neumann divergence non-significant) and its sentiment profile (VADER K-S non-significant). The effect is real but small -- it took n=1000 to detect, and the trace distance magnitude (0.143 on a 0-1 scale) is modest. At n=200 the effect was below the detection threshold.
+**Interpretation**: INT8 quantization slightly shifts *where* the semantic distribution sits in embedding space (trace distance, QRE significant), but preserves its *shape* and *spread* (von Neumann divergence non-significant) and its sentiment profile (VADER K-S non-significant). The effect is real but small -- it took n=1000 to detect, and the trace distance magnitude (0.154 on a 0-1 scale) is modest. At n=200 the effect was below the detection threshold.
 
 #### Null baseline: Llama-3-8B fp32 vs fp32
 
@@ -58,13 +60,15 @@ n=1000, b=5000. Both samples drawn from the same fp32 source.
 
 | Metric | fp32 vs fp32 (null) | fp32 vs int8 |
 |--------|-------------------|--------------|
-| MMD (Hamming) | -0.000, p=0.9300 | 0.002, p < 0.0002 |
-| VADER K-S | 0.022, p=0.9690 | 0.031, p=0.7228 |
-| Trace distance | 0.086, p=0.9768 | 0.143, p < 0.0002 |
-| Von Neumann div | 0.008, p=0.7760 | 0.029, p=0.3244 |
-| QRE (symmetric) | 0.003, p=0.5992 | 0.020, p < 0.0002 |
+| MMD (Hamming) | 0.000, p=0.1900 | 0.002, p < 0.0002 |
+| VADER K-S | 0.016, p=0.9996 | 0.024, p=0.9358 |
+| Trace distance | 0.089, p=0.8658 | 0.154, p < 0.0002 |
+| Von Neumann div | 0.007, p=0.8190 | 0.044, p=0.1228 |
+| QRE (symmetric) | 0.003, p=0.4446 | 0.028, p < 0.0002 |
 
-All metrics are non-significant under the null, with p-values well above 0.05. The contrast with fp32 vs int8 is clear: trace distance nearly doubles (0.086 to 0.143) and QRE increases by an order of magnitude (0.003 to 0.020), both becoming highly significant. Von Neumann divergence remains non-significant in both cases, consistent with its role as a diversity-only measure.
+*Reproduced via `runs/02_llama_null_pca50.sh` (null) and `runs/01_llama_fp32_vs_int8_pca50.sh` (fp32 vs int8).*
+
+All metrics are non-significant under the null, with p-values well above 0.05. The contrast with fp32 vs int8 is clear: trace distance nearly doubles (0.089 to 0.154) and QRE increases by an order of magnitude (0.003 to 0.028), both becoming highly significant. Von Neumann divergence remains non-significant in both cases, consistent with its role as a diversity-only measure.
 
 ### Context 2: Different Prompts, Same Model (positive control)
 
@@ -86,15 +90,17 @@ Llama-3-8B-Instruct, prompt 0 vs prompt 5, fp32.
 
 | Metric | Statistic | p-value | Detects difference? |
 |--------|-----------|---------|-------------------|
-| **MMD (Hamming)** | 0.056 | < 0.0002 | Yes |
-| **VADER K-S** | 0.469 | < 0.0002 | Yes |
-| **Trace Distance** | 0.466 | < 0.0002 | Yes |
-| **Von Neumann Div** | 0.032 | 0.2462 | No |
-| **QRE (symmetric)** | 0.049 | < 0.0002 | Yes |
+| **MMD (Hamming)** | 0.053 | < 0.0002 | Yes |
+| **VADER K-S** | 0.484 | < 0.0002 | Yes |
+| **Trace Distance** | 0.470 | < 0.0002 | Yes |
+| **Von Neumann Div** | 0.103 | < 0.0002 | Yes |
+| **QRE (symmetric)** | 0.043 | < 0.0002 | Yes |
 
-**Interpretation**: Trace distance and QRE strongly detect the semantic difference between prompts at both sample sizes. Von Neumann divergence remains non-significant even at n=1000 with b=5000 -- the two prompts produce outputs with similar diversity despite entirely different content. This confirms von Neumann divergence measures distributional spread, not content.
+*Reproduced via `runs/03_llama_prompt0_vs_prompt5_pca50.sh`.*
 
-The stability of results across sample sizes is notable: trace distance is consistent (0.489 at n=200 vs 0.466 at n=1000), as is QRE (0.059 vs 0.049). The effect is large and unambiguous, in contrast to the quantization effect which required n=1000 to detect.
+**Interpretation**: All five metrics strongly detect the semantic difference between prompts. Von Neumann divergence is significant (0.103, p < 0.0002), meaning the two prompts produce outputs with different diversity levels, not just different content. This is a moderate effect -- much smaller than the cross-language diversity shift (0.614, Context 3) but clearly detectable at n=1000. At n=200 the effect was below the detection threshold (0.006, p=0.93), illustrating that diversity differences between same-language prompts are subtler than content differences and require larger samples to resolve.
+
+Trace distance and QRE are stable across sample sizes (trace distance 0.489 at n=200 vs 0.470 at n=1000; QRE 0.059 vs 0.043). The content-level effect is large and unambiguous at both sample sizes, in contrast to the diversity effect which required n=1000.
 
 ### Context 3: Cross-Language Prompt Comparison
 
@@ -104,32 +110,34 @@ Llama-3-8B-Instruct, wikipedia_en prompt 0 vs wikipedia_ru prompt 0, fp32, n=100
 
 | Metric | Statistic | p-value | Detects difference? |
 |--------|-----------|---------|-------------------|
-| **MMD (Hamming)** | 0.213 | < 0.0002 | Yes |
-| **VADER K-S** | 0.940 | < 0.0002 | Yes |
+| **MMD (Hamming)** | 0.217 | < 0.0002 | Yes |
+| **VADER K-S** | 0.955 | < 0.0002 | Yes |
 | **Trace Distance** | 0.405 | < 0.0002 | Yes |
-| **Von Neumann Div** | 0.614 | < 0.0002 | Yes |
-| **QRE (symmetric)** | 0.217 | < 0.0002 | Yes |
+| **Von Neumann Div** | 0.617 | < 0.0002 | Yes |
+| **QRE (symmetric)** | 0.214 | < 0.0002 | Yes |
+
+*Reproduced via `runs/04_llama_en_vs_ru_pca50.sh`.*
 
 Side-by-side with same-language prompt comparison (en[0] vs en[5], n=1000, b=5000):
 
 | Metric | Same language (en vs en) | Cross language (en vs ru) |
 |--------|------------------------|--------------------------|
-| MMD (Hamming) | 0.056, p < 0.0002 | 0.213, p < 0.0002 |
-| VADER K-S | 0.469, p < 0.0002 | 0.940, p < 0.0002 |
-| Trace distance | 0.466, p < 0.0002 | 0.405, p < 0.0002 |
-| Von Neumann div | 0.032, p=0.25 | **0.614, p < 0.0002** |
-| QRE (symmetric) | 0.049, p < 0.0002 | 0.217, p < 0.0002 |
+| MMD (Hamming) | 0.053, p < 0.0002 | 0.217, p < 0.0002 |
+| VADER K-S | 0.484, p < 0.0002 | 0.955, p < 0.0002 |
+| Trace distance | 0.470, p < 0.0002 | 0.405, p < 0.0002 |
+| Von Neumann div | **0.103, p < 0.0002** | **0.617, p < 0.0002** |
+| QRE (symmetric) | 0.043, p < 0.0002 | 0.214, p < 0.0002 |
 
-**Interpretation**: This is the first context in which von Neumann divergence is significant -- and the effect is massive (0.614, dwarfing all other von Neumann values observed). English and Russian completions differ not just in content but in *diversity structure*: the model likely produces a narrower, more constrained distribution in Russian (a non-primary language) compared to English, where it has richer generation capacity.
+**Interpretation**: Von Neumann divergence is significant in both contexts, but the cross-language effect is 6x larger (0.617 vs 0.103). English and Russian completions differ not just in content but in *diversity structure*: the model likely produces a narrower, more constrained distribution in Russian (a non-primary language) compared to English, where it has richer generation capacity.
 
-This result completes the validation of what von Neumann divergence measures. It is insensitive to:
-- Quantization (same diversity, different tokens)
-- Different prompts in the same language (different content, similar diversity)
+Von Neumann divergence shows a clear gradient across contexts:
+- Quantization (0.044, p=0.12): non-significant -- diversity preserved
+- Same-language prompt difference (0.103, p < 0.0002): significant -- moderate diversity shift
+- Cross-language difference (0.617, p < 0.0002): highly significant -- large diversity shift
 
-But it detects:
-- Cross-language differences (genuinely different diversity structure)
+This reveals that von Neumann divergence is insensitive to quantization but sensitive to input changes that alter the model's generative regime. The magnitude scales with the severity of the regime change: different topics within the same language produce a moderate diversity shift, while switching languages produces a dramatic one.
 
-The other metrics are significant across both same-language and cross-language comparisons, but note that QRE increases sharply (0.049 to 0.217), reflecting the much greater information-theoretic divergence between languages. Trace distance is comparable (0.466 vs 0.405), suggesting the distributions are similarly distinguishable in shape regardless of whether the difference is topical or linguistic.
+The other metrics are significant across both same-language and cross-language comparisons, but note that QRE increases sharply (0.043 to 0.214), reflecting the much greater information-theoretic divergence between languages. Trace distance is comparable (0.470 vs 0.405), suggesting the distributions are similarly distinguishable in shape regardless of whether the difference is topical or linguistic.
 
 ### Context 4: Cross-Model Comparison of Quantization Effects
 
@@ -139,25 +147,27 @@ Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, n=1000, b=5000.
 
 | Metric | Statistic | p-value | Detects difference? |
 |--------|-----------|---------|-------------------|
-| **MMD (Hamming)** | 0.001 | < 0.0002 | Yes |
-| **VADER K-S** | 0.056 | 0.0869 | No |
-| **Trace Distance** | 0.109 | 0.0020 | Yes |
-| **Von Neumann Div** | 0.007 | 0.7794 | No |
-| **QRE (symmetric)** | 0.001 | 0.8764 | No |
+| **MMD (Hamming)** | 0.000 | < 0.0002 | Yes |
+| **VADER K-S** | 0.035 | 0.5729 | No |
+| **Trace Distance** | 0.108 | 0.0012 | Yes |
+| **Von Neumann Div** | 0.050 | 0.0548 | No |
+| **QRE (symmetric)** | 0.002 | 0.6186 | No |
+
+*Reproduced via `runs/05_mistral_fp32_vs_int8_pca50.sh`.*
 
 Side-by-side with Llama-3-8B at the same settings (n=1000, b=5000):
 
 | Metric | Llama-3-8B | Mistral-7B |
 |--------|-----------|-----------|
-| MMD (Hamming) | 0.002, p < 0.0002 | 0.001, p < 0.0002 |
-| VADER K-S | 0.031, p=0.72 | 0.056, p=0.09 |
-| Trace distance | 0.143, p < 0.0002 | 0.109, p=0.0020 |
-| Von Neumann div | 0.029, p=0.32 | 0.007, p=0.78 |
-| QRE (symmetric) | 0.020, p < 0.0002 | 0.001, p=0.88 |
+| MMD (Hamming) | 0.002, p < 0.0002 | 0.000, p < 0.0002 |
+| VADER K-S | 0.024, p=0.94 | 0.035, p=0.57 |
+| Trace distance | 0.154, p < 0.0002 | 0.108, p=0.0012 |
+| Von Neumann div | 0.044, p=0.12 | 0.050, p=0.055 |
+| QRE (symmetric) | 0.028, p < 0.0002 | 0.002, p=0.62 |
 
-**Interpretation**: Mistral-7B is more robust to INT8 quantization than Llama-3-8B at every level. The token-level effect is half the size (MMD 0.001 vs 0.002). Trace distance is smaller (0.109 vs 0.143) and less significant (p=0.002 vs p < 0.0002). Most strikingly, QRE is completely non-significant for Mistral (p=0.88) while highly significant for Llama (p < 0.0002) -- meaning Mistral's semantic information content is fully preserved under quantization, while Llama's shows a small information-theoretic loss.
+**Interpretation**: Mistral-7B is more robust to INT8 quantization than Llama-3-8B at the semantic level. Trace distance is smaller (0.108 vs 0.154) and less significant (p=0.001 vs p < 0.0002). QRE is completely non-significant for Mistral (p=0.62) while highly significant for Llama (p < 0.0002) -- meaning Mistral's semantic information content is fully preserved under quantization, while Llama's shows a small information-theoretic loss.
 
-The consistent finding across both models: von Neumann divergence is non-significant, confirming that INT8 quantization preserves semantic diversity regardless of model architecture. The degree of semantic perturbation, however, is model-dependent -- Mistral's distribution shifts slightly in location (trace distance significant) but preserves information content (QRE non-significant), while Llama shows both a location shift and a small information-theoretic difference.
+Von Neumann divergence is borderline for Mistral (p=0.055) -- just above the 0.05 threshold. This is notably different from the previous run (p=0.78), suggesting the diversity effect under quantization may be near the detection boundary for Mistral under PCA k=50. The consistent finding across both models is that von Neumann divergence does not reach clear significance under PCA, though the full 768D analysis (Context 5) reveals that Mistral does show a diversity change in the tail dimensions.
 
 #### Null baseline: Mistral-7B fp32 vs fp32
 
@@ -165,13 +175,15 @@ Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, n=1000, b=5000. Both samples dr
 
 | Metric | fp32 vs fp32 (null) | fp32 vs int8 |
 |--------|-------------------|--------------|
-| MMD (Hamming) | 0.000, p=0.2900 | 0.001, p < 0.0002 |
-| VADER K-S | 0.050, p=0.1641 | 0.056, p=0.0869 |
-| Trace distance | 0.089, p=0.5322 | 0.109, p=0.0020 |
-| Von Neumann div | 0.029, p=0.2560 | 0.007, p=0.7794 |
-| QRE (symmetric) | 0.002, p=0.5234 | 0.001, p=0.8764 |
+| MMD (Hamming) | -0.000, p=0.6600 | 0.000, p < 0.0002 |
+| VADER K-S | 0.020, p=0.9883 | 0.035, p=0.5729 |
+| Trace distance | 0.097, p=0.1008 | 0.108, p=0.0012 |
+| Von Neumann div | 0.047, p=0.0652 | 0.050, p=0.0548 |
+| QRE (symmetric) | 0.005, p=0.0742 | 0.002, p=0.6186 |
 
-All metrics are non-significant under the null, confirming the permutation tests are well-calibrated. Note that trace distance is not zero under the null (0.089) -- there is always sampling noise in density matrix estimates. The permutation test correctly identifies this as non-significant, which is why raw statistics alone are uninterpretable without p-values.
+*Reproduced via `runs/06_mistral_null_pca50.sh` (null) and `runs/05_mistral_fp32_vs_int8_pca50.sh` (fp32 vs int8).*
+
+All metrics are non-significant under the null, confirming the permutation tests are well-calibrated. The quantum metric p-values for the null are lower than typical (0.065-0.10 range), but all remain above the 0.05 threshold. Note that trace distance is not zero under the null (0.097) -- there is always sampling noise in density matrix estimates. The permutation test correctly identifies this as non-significant, which is why raw statistics alone are uninterpretable without p-values.
 
 ### Context 5: PCA k=50 vs Full 768D Density Matrices
 
@@ -184,12 +196,12 @@ Llama-3-8B-Instruct, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
 | Metric | PCA k=50 | Full 768D |
 |--------|----------|-----------|
 | MMD (Hamming) | 0.002, p < 0.0002 | 0.003, p < 0.0002 |
-| VADER K-S | 0.031, p=0.7228 | 0.025, p=0.9137 |
-| Trace distance | 0.143, p < 0.0002 | 0.101, p < 0.0002 |
-| Von Neumann div | 0.029, p=0.3244 | 0.011, p=0.6064 |
-| QRE (symmetric) | 0.020, p < 0.0002 | 0.004, p < 0.0002 |
+| VADER K-S | 0.024, p=0.9358 | 0.025, p=0.9137 |
+| Trace distance | 0.154, p < 0.0002 | 0.101, p < 0.0002 |
+| Von Neumann div | 0.044, p=0.1228 | 0.011, p=0.6064 |
+| QRE (symmetric) | 0.028, p < 0.0002 | 0.004, p < 0.0002 |
 
-**Interpretation**: The two approaches produce qualitatively identical conclusions. All significance/non-significance calls agree. The raw statistics are uniformly smaller in full-space mode -- trace distance drops from 0.143 to 0.101, QRE from 0.020 to 0.004, von Neumann divergence from 0.029 to 0.011. This is expected: the 768D density matrices are rank ~200 (capped by the n=1000 sample size), so the signal is diluted across 568 zero-eigenvalue dimensions. PCA concentrates the signal into the 50 dimensions that carry the most variance, producing sharper effect sizes.
+**Interpretation**: The two approaches produce qualitatively identical conclusions. All significance/non-significance calls agree. The raw statistics are uniformly smaller in full-space mode -- trace distance drops from 0.154 to 0.101, QRE from 0.028 to 0.004, von Neumann divergence from 0.044 to 0.011. This is expected: the 768D density matrices are rank ~200 (capped by the n=1000 sample size), so the signal is diluted across 568 zero-eigenvalue dimensions. PCA concentrates the signal into the 50 dimensions that carry the most variance, producing sharper effect sizes.
 
 Despite smaller statistics, the permutation tests still correctly identify trace distance and QRE as significant. The null distribution is diluted by the same factor, so p-values track. Von Neumann divergence is even further from significance in full-space mode (p=0.61 vs p=0.32), consistent with dilution reducing the apparent effect size without changing the conclusion.
 
@@ -203,13 +215,13 @@ Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
 
 | Metric | PCA k=50 | Full 768D |
 |--------|----------|-----------|
-| MMD (Hamming) | 0.001, p < 0.0002 | 0.000, p < 0.0002 |
-| VADER K-S | 0.056, p=0.0869 | 0.027, p=0.8595 |
-| Trace distance | 0.109, p=0.0020 | 0.092, p < 0.0002 |
-| Von Neumann div | **0.007, p=0.7794** | **0.097, p < 0.0002** |
-| QRE (symmetric) | **0.001, p=0.8764** | **0.003, p=0.0008** |
+| MMD (Hamming) | 0.000, p < 0.0002 | 0.000, p < 0.0002 |
+| VADER K-S | 0.035, p=0.5729 | 0.027, p=0.8595 |
+| Trace distance | 0.108, p=0.0012 | 0.092, p < 0.0002 |
+| Von Neumann div | **0.050, p=0.0548** | **0.097, p < 0.0002** |
+| QRE (symmetric) | **0.002, p=0.6186** | **0.003, p=0.0008** |
 
-**Interpretation**: Unlike Llama, the two approaches **disagree qualitatively** for Mistral. Under PCA k=50, Mistral appeared robust to quantization -- only trace distance was marginally significant, and both von Neumann divergence and QRE were solidly non-significant. Under full 768D, von Neumann divergence flips from non-significant (p=0.78) to highly significant (p < 0.0002), with the statistic jumping from 0.007 to 0.097. QRE also becomes significant (p=0.0008).
+**Interpretation**: The two approaches **disagree qualitatively** for Mistral. Under PCA k=50, Mistral shows only trace distance as significant, with von Neumann divergence borderline (p=0.055) and QRE solidly non-significant. Under full 768D, von Neumann divergence becomes clearly significant (p < 0.0002), with the statistic nearly doubling from 0.050 to 0.097. QRE also becomes significant (p=0.0008).
 
 This means the tail dimensions that PCA discards carry information about Mistral's diversity change under quantization -- information that is absent (or undetectable) in the top 50 principal components. This partially vindicates the concern that PCA projection might mask real effects, though the effect is model-dependent: Llama shows no such discrepancy.
 
@@ -227,7 +239,7 @@ n=1000, b=5000. Both samples drawn from the same fp32 source.
 
 The null is clean -- all metrics non-significant -- confirming that the Mistral full-space results are not false positives. The von Neumann divergence contrast is dramatic: 0.001 under the null vs 0.097 under quantization, an ~80x increase. This confirms that INT8 quantization genuinely alters Mistral's semantic diversity structure in ways that are only visible in the tail dimensions of the embedding space.
 
-The PCA k=50 conclusion that "Mistral is fully robust to quantization" must be revised: Mistral preserves the semantic structure captured by the top 50 principal components, but quantization perturbs the fine-grained diversity structure encoded in the remaining dimensions. Whether this matters in practice depends on what those tail dimensions represent -- but the effect is statistically real.
+The PCA k=50 conclusion must be revised: under PCA, Mistral's von Neumann divergence is borderline (p=0.055), hinting at a diversity effect that only becomes clearly significant in full 768D. Mistral preserves the semantic structure captured by the top 50 principal components, but quantization perturbs the fine-grained diversity structure encoded in the remaining dimensions. Whether this matters in practice depends on what those tail dimensions represent -- but the effect is statistically real.
 
 #### Null baseline: Full 768D, Llama-3-8B fp32 vs fp32
 
@@ -235,13 +247,15 @@ n=1000, b=5000. Both samples drawn from the same fp32 source.
 
 | Metric | PCA k=50 (null) | Full 768D (null) | Full 768D (fp32 vs int8) |
 |--------|----------------|------------------|--------------------------|
-| MMD (Hamming) | -0.000, p=0.9300 | -0.000, p=0.5600 | 0.003, p < 0.0002 |
-| VADER K-S | 0.022, p=0.9690 | 0.023, p=0.9542 | 0.025, p=0.9137 |
-| Trace distance | 0.086, p=0.9768 | 0.048, p=0.9786 | 0.101, p < 0.0002 |
-| Von Neumann div | 0.008, p=0.7760 | 0.010, p=0.6612 | 0.011, p=0.6064 |
-| QRE (symmetric) | 0.003, p=0.5992 | 0.0004, p=0.9320 | 0.004, p < 0.0002 |
+| MMD (Hamming) | 0.000, p=0.1900 | -0.000, p=0.5600 | 0.003, p < 0.0002 |
+| VADER K-S | 0.016, p=0.9996 | 0.023, p=0.9542 | 0.025, p=0.9137 |
+| Trace distance | 0.089, p=0.8658 | 0.048, p=0.9786 | 0.101, p < 0.0002 |
+| Von Neumann div | 0.007, p=0.8190 | 0.010, p=0.6612 | 0.011, p=0.6064 |
+| QRE (symmetric) | 0.003, p=0.4446 | 0.0004, p=0.9320 | 0.004, p < 0.0002 |
 
-The full-space null is well-calibrated -- no false positives, with all p-values well above 0.05. The contrast with fp32 vs int8 is clean: trace distance doubles (0.048 to 0.101) and QRE increases by an order of magnitude (0.0004 to 0.004), both becoming highly significant. Note that trace distance under the null is smaller in full-space mode (0.048) than in PCA mode (0.086), consistent with the general pattern of diluted statistics in higher dimensions. The permutation test correctly identifies both as non-significant regardless of the raw magnitude.
+*PCA k=50 null reproduced via `runs/02_llama_null_pca50.sh`.*
+
+The full-space null is well-calibrated -- no false positives, with all p-values well above 0.05. The contrast with fp32 vs int8 is clean: trace distance doubles (0.048 to 0.101) and QRE increases by an order of magnitude (0.0004 to 0.004), both becoming highly significant. Note that trace distance under the null is smaller in full-space mode (0.048) than in PCA mode (0.089), consistent with the general pattern of diluted statistics in higher dimensions. The permutation test correctly identifies both as non-significant regardless of the raw magnitude.
 
 ## What This Tells Us
 
@@ -255,10 +269,10 @@ The central insight from these experiments is that **detection** and **character
 
 | Metric | Llama fp32 vs fp32 (null) | Llama fp32 vs int8 |
 |--------|--------------------------|-------------------|
-| MMD Hamming | -0.000, p=0.9300 | 0.002, p < 0.0002 |
-| Trace distance | 0.086, p=0.9768 | 0.143, p < 0.0002 |
-| QRE (symmetric) | 0.003, p=0.5992 | 0.020, p < 0.0002 |
-| Von Neumann div | 0.008, p=0.7760 | 0.029, p=0.3244 |
+| MMD Hamming | 0.000, p=0.1900 | 0.002, p < 0.0002 |
+| Trace distance | 0.089, p=0.8658 | 0.154, p < 0.0002 |
+| QRE (symmetric) | 0.003, p=0.4446 | 0.028, p < 0.0002 |
+| Von Neumann div | 0.007, p=0.8190 | 0.044, p=0.1228 |
 
 MMD detects a token-level change. The quantum metrics characterize it: trace distance and QRE show a small semantic shift, but von Neumann divergence remains non-significant -- the diversity structure is preserved. Without the quantum metrics, you would know that quantization changes the output but not whether the change is semantically meaningful.
 
@@ -273,14 +287,14 @@ The five contexts together reveal what each metric is sensitive to:
 | Metric | Content shift? | Diversity shift? | Evidence |
 |--------|---------------|-----------------|----------|
 | Trace distance | Yes | Yes | Detects prompt and language differences |
-| Von Neumann div | No | Yes | Only fires for cross-language (diversity structure change) |
+| Von Neumann div | No | Yes | Insensitive to quantization; detects prompt and language diversity shifts with magnitude scaling by severity |
 | QRE (symmetric) | Yes | Yes | Detects prompt and language differences; scales with effect size |
 
-**Von Neumann divergence** is the most selective metric. It is insensitive to content differences within a language (different prompts), but highly sensitive to diversity structure changes (cross-language, von Neumann 0.614). Its behavior under quantization depends on the density matrix construction: under PCA k=50 it is non-significant for both Llama and Mistral, suggesting diversity is preserved in the top principal components. Under full 768D, it remains non-significant for Llama but becomes highly significant for Mistral (0.097, p < 0.0002), revealing a diversity change in the tail dimensions. Its non-significance for same-language prompt pairs confirms it measures spread, not content.
+**Von Neumann divergence** is the most selective metric. It is insensitive to quantization (0.044, p=0.12 for Llama PCA k=50), confirming that INT8 preserves the diversity structure of the output distribution. But it is sensitive to changes that alter the model's generative regime: same-language prompt differences produce a moderate diversity shift (0.103, p < 0.0002), and cross-language differences produce a dramatic one (0.617, p < 0.0002). Its behavior under quantization also depends on the density matrix construction: under PCA k=50 it is non-significant for both Llama and Mistral, but under full 768D it becomes highly significant for Mistral (0.097, p < 0.0002), revealing a diversity change in the tail dimensions.
 
-**Trace distance and QRE** are sensitive to both content and diversity differences. At n=200 they show non-significance for fp32 vs int8, but at n=1000 they detect a small semantic shift. This means quantization does slightly perturb the semantic distribution, but the effect is subtle. Their strong significance for different prompts (trace distance ~0.47) and cross-language comparisons (QRE jumps from 0.049 to 0.217) confirms they can detect real semantic differences at multiple scales.
+**Trace distance and QRE** are sensitive to both content and diversity differences. At n=200 they show non-significance for fp32 vs int8, but at n=1000 they detect a small semantic shift. This means quantization does slightly perturb the semantic distribution, but the effect is subtle. Their strong significance for different prompts (trace distance 0.470) and cross-language comparisons (QRE jumps from 0.043 to 0.217) confirms they can detect real semantic differences at multiple scales.
 
-**Together**, the three metrics paint a precise picture: INT8 quantization introduces a small, model-dependent semantic perturbation. The degree of perturbation depends on both the model architecture and the dimensionality of the analysis. In the top 50 principal components, Llama shows a small semantic shift (trace distance and QRE significant) while Mistral appears robust (only trace distance marginally significant). In the full embedding space, Mistral reveals a diversity change invisible to PCA (von Neumann divergence significant), while Llama's picture remains unchanged. The magnitude of the quantization effect (trace distance 0.09-0.14) is modest compared to a same-language content difference (trace distance ~0.47) or cross-language difference (von Neumann divergence 0.614).
+**Together**, the three metrics paint a precise picture: INT8 quantization introduces a small, model-dependent semantic perturbation. The degree of perturbation depends on both the model architecture and the dimensionality of the analysis. In the top 50 principal components, Llama shows a small semantic shift (trace distance and QRE significant) while Mistral appears robust (only trace distance marginally significant). In the full embedding space, Mistral reveals a diversity change invisible to PCA (von Neumann divergence significant), while Llama's picture remains unchanged. The magnitude of the quantization effect (trace distance 0.10-0.15) is modest compared to a same-language content difference (trace distance ~0.47) or cross-language difference (von Neumann divergence 0.617).
 
 ## Technical Notes
 
