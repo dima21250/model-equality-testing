@@ -18,6 +18,7 @@ import numpy as np
 
 from model_equality_testing.dataset import load_distribution
 from model_equality_testing.algorithm import run_two_sample_test
+from model_equality_testing.pvalue import multi_quantum_permutation_test
 from model_equality_testing.tests import (
     quantum_trace_distance,
     quantum_von_neumann_divergence,
@@ -49,7 +50,10 @@ def sample_distribution(
 
 
 def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2", b=100, pca_k=50):
-    """Compute all quantum metrics with timing and statistical calibration.
+    """Compute all quantum metrics in a single unified permutation loop.
+
+    Embeds both samples once, fits PCA once (if applicable), and runs one
+    permutation loop computing all three metrics from shared density matrices.
 
     Args:
         sample1: First CompletionSample
@@ -61,56 +65,37 @@ def compute_quantum_metrics(sample1, sample2, embedding_model="all-mpnet-base-v2
     Returns:
         Dict mapping metric name to (statistic, pvalue, elapsed_time)
     """
-    results = {}
-
     if pca_k == 0:
         print(f"  Computing quantum metrics with permutation tests (full space, no PCA)...")
     else:
         print(f"  Computing quantum metrics with permutation tests (PCA k={pca_k})...")
 
-    # Trace distance
     with Stopwatch() as sw:
-        pvalue, td = run_two_sample_test(
+        raw_results = multi_quantum_permutation_test(
             sample1, sample2,
-            stat_type="quantum_trace_distance",
-            pvalue_type="permutation_pvalue",
             b=b,
             embedding_model=embedding_model,
             pca_k=pca_k,
         )
-    results["Trace Distance"] = (td, pvalue, sw.time)
-    print(f"    - Trace distance: {td:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    elapsed = sw.time
 
-    # Von Neumann entropy divergence
-    with Stopwatch() as sw:
-        pvalue, entropy_div = run_two_sample_test(
-            sample1, sample2,
-            stat_type="quantum_von_neumann_divergence",
-            pvalue_type="permutation_pvalue",
-            b=b,
-            embedding_model=embedding_model,
-            pca_k=pca_k,
-        )
-    results["Von Neumann Divergence"] = (entropy_div, pvalue, sw.time)
-    print(f"    - Von Neumann divergence: {entropy_div:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+    td, p_td = raw_results["trace_distance"]
+    vn, p_vn = raw_results["von_neumann_divergence"]
+    qre, p_qre = raw_results["qre_symmetric"]
 
-    # Quantum relative entropy (symmetric)
-    with Stopwatch() as sw:
-        pvalue, qre = run_two_sample_test(
-            sample1, sample2,
-            stat_type="quantum_relative_entropy",
-            pvalue_type="permutation_pvalue",
-            b=b,
-            embedding_model=embedding_model,
-            pca_k=pca_k,
-            symmetric=True,
-        )
-    results["QRE (symmetric)"] = (qre, pvalue, sw.time)
+    print(f"    - Trace distance: {td:.6f}, p={p_td:.4f}")
+    print(f"    - Von Neumann divergence: {vn:.6f}, p={p_vn:.4f}")
     if qre == np.inf:
-        print(f"    - QRE (symmetric): inf, p={pvalue:.4f} (took {sw.time:.2f}s)")
+        print(f"    - QRE (symmetric): inf, p={p_qre:.4f}")
     else:
-        print(f"    - QRE (symmetric): {qre:.6f}, p={pvalue:.4f} (took {sw.time:.2f}s)")
+        print(f"    - QRE (symmetric): {qre:.6f}, p={p_qre:.4f}")
+    print(f"    Total time: {elapsed:.2f}s")
 
+    results = {
+        "Trace Distance": (td, p_td, elapsed),
+        "Von Neumann Divergence": (vn, p_vn, elapsed),
+        "QRE (symmetric)": (qre, p_qre, elapsed),
+    }
     return results
 
 

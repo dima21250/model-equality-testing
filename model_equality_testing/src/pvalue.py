@@ -318,6 +318,104 @@ def two_sample_embedding_permutation_pvalue(
     return get_pvalue
 
 
+def multi_quantum_permutation_test(
+    sample1: CompletionSample,
+    sample2: CompletionSample,
+    b=1000,
+    embedding_model="all-mpnet-base-v2",
+    batch_size=32,
+    pca_k=50,
+    symmetric_qre=True,
+) -> Dict[str, Tuple[float, float]]:
+    """Compute all quantum metrics in a single permutation loop.
+
+    Embeds both samples once, fits PCA once (if applicable), and runs one
+    permutation loop that computes trace distance, von Neumann divergence,
+    and QRE from the same density matrix pair on each iteration.
+
+    Args:
+        sample1: First CompletionSample
+        sample2: Second CompletionSample
+        b: Number of permutations
+        embedding_model: SBERT model name
+        batch_size: Batch size for embedding inference
+        pca_k: PCA components (0 for full-space, >0 for PCA, None for legacy)
+        symmetric_qre: If True, compute symmetric QRE
+
+    Returns:
+        Dict mapping metric name to (observed_statistic, p_value)
+    """
+    from .embeddings import embed_sample
+    from .quantum_metrics import (
+        fit_pca,
+        pca_density_matrix,
+        full_density_matrix,
+        compute_pip_matrix,
+        normalize_to_density_matrix,
+        trace_distance,
+        von_neumann_entropy,
+        quantum_relative_entropy,
+    )
+
+    embeddings1 = embed_sample(sample1, model_name=embedding_model, batch_size=batch_size)
+    embeddings2 = embed_sample(sample2, model_name=embedding_model, batch_size=batch_size)
+    all_embeddings = np.concatenate([embeddings1, embeddings2], axis=0)
+    n1 = len(embeddings1)
+
+    fitted_pca = None
+    if pca_k is not None and pca_k > 0:
+        fitted_pca = fit_pca(all_embeddings, k=pca_k)
+
+    def _build_density_matrices(emb1, emb2):
+        if pca_k is not None and pca_k > 0:
+            return pca_density_matrix(emb1, fitted_pca), pca_density_matrix(emb2, fitted_pca)
+        elif pca_k == 0:
+            return full_density_matrix(emb1), full_density_matrix(emb2)
+        else:
+            pip1 = compute_pip_matrix(emb1)
+            pip2 = compute_pip_matrix(emb2)
+            return normalize_to_density_matrix(pip1), normalize_to_density_matrix(pip2)
+
+    def _compute_all_metrics(rho1, rho2):
+        td = trace_distance(rho1, rho2)
+        vn = abs(von_neumann_entropy(rho1) - von_neumann_entropy(rho2))
+        qre_fwd = quantum_relative_entropy(rho1, rho2)
+        if symmetric_qre:
+            qre_bwd = quantum_relative_entropy(rho2, rho1)
+            qre = qre_fwd + qre_bwd
+        else:
+            qre = qre_fwd
+        return td, vn, qre
+
+    # Observed statistics
+    obs_rho1, obs_rho2 = _build_density_matrices(embeddings1, embeddings2)
+    obs_td, obs_vn, obs_qre = _compute_all_metrics(obs_rho1, obs_rho2)
+
+    # Permutation loop
+    perm_td = np.empty(b)
+    perm_vn = np.empty(b)
+    perm_qre = np.empty(b)
+
+    for i in tqdm.tqdm(range(b), desc="Permutation bootstrap"):
+        ix = np.random.permutation(len(all_embeddings))
+        perm_emb1 = all_embeddings[ix[:n1]]
+        perm_emb2 = all_embeddings[ix[n1:]]
+
+        rho1, rho2 = _build_density_matrices(perm_emb1, perm_emb2)
+        perm_td[i], perm_vn[i], perm_qre[i] = _compute_all_metrics(rho1, rho2)
+
+    # p-values
+    p_td = np.mean(perm_td >= obs_td)
+    p_vn = np.mean(perm_vn >= obs_vn)
+    p_qre = np.mean(perm_qre >= obs_qre)
+
+    return {
+        "trace_distance": (obs_td, float(p_td)),
+        "von_neumann_divergence": (obs_vn, float(p_vn)),
+        "qre_symmetric": (obs_qre, float(p_qre)),
+    }
+
+
 ###### map from name to function ######
 
 IMPLEMENTED_PVALUES = {
