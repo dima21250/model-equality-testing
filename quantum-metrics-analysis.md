@@ -196,16 +196,18 @@ Llama-3-8B-Instruct, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
 | Metric | PCA k=50 | Full 768D |
 |--------|----------|-----------|
 | MMD (Hamming) | 0.002, p < 0.0002 | 0.003, p < 0.0002 |
-| VADER K-S | 0.024, p=0.9358 | 0.025, p=0.9137 |
-| Trace distance | 0.154, p < 0.0002 | 0.101, p < 0.0002 |
-| Von Neumann div | 0.044, p=0.1228 | 0.011, p=0.6064 |
-| QRE (symmetric) | 0.028, p < 0.0002 | 0.004, p < 0.0002 |
+| VADER K-S | 0.024, p=0.9358 | 0.027, p=0.8595 |
+| Trace distance | 0.154, p < 0.0002 | 0.116, p < 0.0002 |
+| Von Neumann div | 0.044, p=0.1228 | 0.030, p=0.1752 |
+| QRE (symmetric) | 0.028, p < 0.0002 | 0.004, p=0.0002 |
 
-**Interpretation**: The two approaches produce qualitatively identical conclusions. All significance/non-significance calls agree. The raw statistics are uniformly smaller in full-space mode -- trace distance drops from 0.154 to 0.101, QRE from 0.028 to 0.004, von Neumann divergence from 0.044 to 0.011. This is expected: the 768D density matrices are rank ~200 (capped by the n=1000 sample size), so the signal is diluted across 568 zero-eigenvalue dimensions. PCA concentrates the signal into the 50 dimensions that carry the most variance, producing sharper effect sizes.
+*Full 768D reproduced via `runs/07_llama_fp32_vs_int8_full.sh`.*
 
-Despite smaller statistics, the permutation tests still correctly identify trace distance and QRE as significant. The null distribution is diluted by the same factor, so p-values track. Von Neumann divergence is even further from significance in full-space mode (p=0.61 vs p=0.32), consistent with dilution reducing the apparent effect size without changing the conclusion.
+**Interpretation**: The two approaches produce qualitatively identical conclusions. All significance/non-significance calls agree. The raw statistics are uniformly smaller in full-space mode -- trace distance drops from 0.154 to 0.116, QRE from 0.028 to 0.004, von Neumann divergence from 0.044 to 0.030. This is expected: the 768D density matrices are rank ~200 (capped by the n=1000 sample size), so the signal is diluted across 568 zero-eigenvalue dimensions. PCA concentrates the signal into the 50 dimensions that carry the most variance, producing sharper effect sizes.
 
-The full-space mode carries a substantial computational cost: QRE permutation testing took ~15 minutes at 768D vs ~30 seconds at k=50, roughly a 30x slowdown from eigendecomposing 768×768 matrices instead of 50×50.
+Despite smaller statistics, the permutation tests still correctly identify trace distance and QRE as significant. The null distribution is diluted by the same factor, so p-values track. Von Neumann divergence is non-significant in both modes (p=0.12 PCA vs p=0.18 full-space), consistent with dilution reducing the apparent effect size without changing the conclusion.
+
+The full-space mode carries a substantial computational cost: the unified permutation loop took ~25 minutes at 768D vs ~30 seconds at k=50, roughly a 50x slowdown from eigendecomposing 768×768 matrices instead of 50×50.
 
 For Llama, this validates the PCA k=50 approach: the full embedding space does not reveal effects that PCA misses, while PCA produces larger effect sizes and runs much faster.
 
@@ -215,13 +217,15 @@ Mistral-7B-Instruct-v0.3, wikipedia_en prompt 0, fp32 vs int8, n=1000, b=5000.
 
 | Metric | PCA k=50 | Full 768D |
 |--------|----------|-----------|
-| MMD (Hamming) | 0.000, p < 0.0002 | 0.000, p < 0.0002 |
-| VADER K-S | 0.035, p=0.5729 | 0.027, p=0.8595 |
-| Trace distance | 0.108, p=0.0012 | 0.092, p < 0.0002 |
-| Von Neumann div | **0.050, p=0.0548** | **0.097, p < 0.0002** |
-| QRE (symmetric) | **0.002, p=0.6186** | **0.003, p=0.0008** |
+| MMD (Hamming) | 0.000, p < 0.0002 | 0.001, p < 0.0002 |
+| VADER K-S | 0.035, p=0.5729 | 0.024, p=0.9358 |
+| Trace distance | 0.108, p=0.0012 | 0.100, p < 0.0002 |
+| Von Neumann div | **0.050, p=0.0548** | **0.111, p < 0.0002** |
+| QRE (symmetric) | **0.002, p=0.6186** | **0.004, p=0.0002** |
 
-**Interpretation**: The two approaches **disagree qualitatively** for Mistral. Under PCA k=50, Mistral shows only trace distance as significant, with von Neumann divergence borderline (p=0.055) and QRE solidly non-significant. Under full 768D, von Neumann divergence becomes clearly significant (p < 0.0002), with the statistic nearly doubling from 0.050 to 0.097. QRE also becomes significant (p=0.0008).
+*Full 768D reproduced via `runs/09_mistral_fp32_vs_int8_full.sh`.*
+
+**Interpretation**: The two approaches **disagree qualitatively** for Mistral. Under PCA k=50, Mistral shows only trace distance as significant, with von Neumann divergence borderline (p=0.055) and QRE solidly non-significant. Under full 768D, von Neumann divergence becomes clearly significant (p < 0.0002), with the statistic more than doubling from 0.050 to 0.111. QRE also becomes significant (p=0.0002).
 
 This means the tail dimensions that PCA discards carry information about Mistral's diversity change under quantization -- information that is absent (or undetectable) in the top 50 principal components. This partially vindicates the concern that PCA projection might mask real effects, though the effect is model-dependent: Llama shows no such discrepancy.
 
@@ -231,13 +235,15 @@ n=1000, b=5000. Both samples drawn from the same fp32 source.
 
 | Metric | Full 768D (null) | Full 768D (fp32 vs int8) |
 |--------|------------------|--------------------------|
-| MMD (Hamming) | -0.000, p=0.7500 | 0.000, p < 0.0002 |
-| VADER K-S | 0.025, p=0.9137 | 0.027, p=0.8595 |
-| Trace distance | 0.057, p=0.5706 | 0.092, p < 0.0002 |
-| Von Neumann div | 0.001, p=0.9632 | 0.097, p < 0.0002 |
-| QRE (symmetric) | 0.002, p=0.0736 | 0.003, p=0.0008 |
+| MMD (Hamming) | -0.000, p=0.9400 | 0.001, p < 0.0002 |
+| VADER K-S | 0.027, p=0.8595 | 0.024, p=0.9358 |
+| Trace distance | 0.057, p=0.7430 | 0.100, p < 0.0002 |
+| Von Neumann div | 0.025, p=0.3420 | 0.111, p < 0.0002 |
+| QRE (symmetric) | 0.001, p=0.3376 | 0.004, p=0.0002 |
 
-The null is clean -- all metrics non-significant -- confirming that the Mistral full-space results are not false positives. The von Neumann divergence contrast is dramatic: 0.001 under the null vs 0.097 under quantization, an ~80x increase. This confirms that INT8 quantization genuinely alters Mistral's semantic diversity structure in ways that are only visible in the tail dimensions of the embedding space.
+*Reproduced via `runs/10_mistral_null_full.sh` (null) and `runs/09_mistral_fp32_vs_int8_full.sh` (fp32 vs int8).*
+
+The null is clean -- all metrics non-significant -- confirming that the Mistral full-space results are not false positives. The von Neumann divergence contrast is clear: 0.025 under the null vs 0.111 under quantization, a ~4.5x increase with the null solidly non-significant (p=0.34) and the quantization effect highly significant (p < 0.0002). This confirms that INT8 quantization genuinely alters Mistral's semantic diversity structure in ways that are only visible in the tail dimensions of the embedding space.
 
 The PCA k=50 conclusion must be revised: under PCA, Mistral's von Neumann divergence is borderline (p=0.055), hinting at a diversity effect that only becomes clearly significant in full 768D. Mistral preserves the semantic structure captured by the top 50 principal components, but quantization perturbs the fine-grained diversity structure encoded in the remaining dimensions. Whether this matters in practice depends on what those tail dimensions represent -- but the effect is statistically real.
 
@@ -247,15 +253,15 @@ n=1000, b=5000. Both samples drawn from the same fp32 source.
 
 | Metric | PCA k=50 (null) | Full 768D (null) | Full 768D (fp32 vs int8) |
 |--------|----------------|------------------|--------------------------|
-| MMD (Hamming) | 0.000, p=0.1900 | -0.000, p=0.5600 | 0.003, p < 0.0002 |
-| VADER K-S | 0.016, p=0.9996 | 0.023, p=0.9542 | 0.025, p=0.9137 |
-| Trace distance | 0.089, p=0.8658 | 0.048, p=0.9786 | 0.101, p < 0.0002 |
-| Von Neumann div | 0.007, p=0.8190 | 0.010, p=0.6612 | 0.011, p=0.6064 |
-| QRE (symmetric) | 0.003, p=0.4446 | 0.0004, p=0.9320 | 0.004, p < 0.0002 |
+| MMD (Hamming) | 0.000, p=0.1900 | 0.000, p=0.3300 | 0.003, p < 0.0002 |
+| VADER K-S | 0.016, p=0.9996 | 0.060, p=0.0546 | 0.027, p=0.8595 |
+| Trace distance | 0.089, p=0.8658 | 0.056, p=0.2024 | 0.116, p < 0.0002 |
+| Von Neumann div | 0.007, p=0.8190 | 0.008, p=0.7098 | 0.030, p=0.1752 |
+| QRE (symmetric) | 0.003, p=0.4446 | 0.001, p=0.3238 | 0.004, p=0.0002 |
 
-*PCA k=50 null reproduced via `runs/02_llama_null_pca50.sh`.*
+*PCA k=50 null reproduced via `runs/02_llama_null_pca50.sh`. Full 768D null reproduced via `runs/08_llama_null_full.sh`.*
 
-The full-space null is well-calibrated -- no false positives, with all p-values well above 0.05. The contrast with fp32 vs int8 is clean: trace distance doubles (0.048 to 0.101) and QRE increases by an order of magnitude (0.0004 to 0.004), both becoming highly significant. Note that trace distance under the null is smaller in full-space mode (0.048) than in PCA mode (0.089), consistent with the general pattern of diluted statistics in higher dimensions. The permutation test correctly identifies both as non-significant regardless of the raw magnitude.
+The full-space null is well-calibrated -- no false positives, with all p-values above 0.05. The contrast with fp32 vs int8 is clean: trace distance doubles (0.056 to 0.116) and QRE quadruples (0.001 to 0.004), both becoming significant. Note that trace distance under the null is smaller in full-space mode (0.056) than in PCA mode (0.089), consistent with the general pattern of diluted statistics in higher dimensions. The permutation test correctly identifies both as non-significant regardless of the raw magnitude.
 
 ## What This Tells Us
 
