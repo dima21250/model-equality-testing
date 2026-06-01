@@ -20,6 +20,9 @@ The core problem: Users access LLMs through APIs, but providers may quantize, wa
 - `utils.py` - Utility functions (unicode tokenization, padding, etc.)
 - `corpus_sampling.py` - Corpus sampling utilities for K-S tests
 - `features.py` - Feature extraction (e.g., VADER sentiment scores for K-S tests)
+- `embeddings.py` - SBERT embedding generation with `EmbeddingModel` class and `embed_sample()`
+- `quantum_metrics.py` - Quantum-inspired metrics: density matrices, trace distance, von Neumann entropy
+- `semantic_axes.py` - **Semantic interpretation layer**: Explains *what* differs between models using interpretable semantic dimensions
 
 **Experiments** (`experiments/`):
 - `experiments/sampling/` - Code to collect samples from local models and APIs (used to generate the dataset)
@@ -56,6 +59,15 @@ download_dataset(root_dir="./data")
 **Distribution abstraction**: `DistributionFromDataset` wraps pre-collected samples and provides a `draw_completion_sample(n)` method. This enables both goodness-of-fit tests (against a reference distribution) and two-sample tests (between two sample sets).
 
 **P-value flexibility**: Tests accept either a `pvalue_type` string (`"permutation_pvalue"`, `"parametric_bootstrap"`) or a custom p-value calculator function via `get_pvalue` parameter.
+
+**Semantic axes pattern**: The `semantic_axes` module provides an interpretation layer built on top of SBERT embeddings. Key design principles:
+- **L2 normalization**: Both axis construction (`load_axis_from_jsonl`) and projection (`project_onto_axis`) L2-normalize embeddings for cosine-similarity semantics
+- **Statistical rigor**: Welch's t-test (no equal-variance assumption), Hedges' g with bias correction, Benjamini-Hochberg FDR correction
+- **Quality metrics**: Separation ratio (pole_distance / mean_intra_std) validates axis discriminating power; values < 1.0 trigger warnings
+- **Division guards**: Separation ratio, Hedges' g formula, and J correction all guard against division by zero or small sample sizes
+- **_precomputed_embeddings pattern**: `interpret_samples()` follows the same pattern as `tests.py` to reuse embeddings across quantum and semantic analyses
+- **Filename sanitization**: `save_axes()` sanitizes axis names (replaces non-alphanumeric with `_`) for cross-platform compatibility
+- **Logging convention**: Uses `logging.warning()` throughout to match `embeddings.py`
 
 ## Common Development Tasks
 
@@ -99,6 +111,34 @@ p = load_distribution(
 - API samples (anyscale, amazon, fireworks, etc.): stored as strings, only loaded in unicode space
 - When loading local samples in unicode, special tokens are skipped and each character becomes its Unicode codepoint
 - Padding is always represented as `-1`
+
+**Interpret differences with semantic axes**:
+```python
+from model_equality_testing.src.embeddings import embed_sample
+from model_equality_testing.src.semantic_axes import load_axis_from_jsonl, interpret_difference
+
+# Load samples
+sample_a = dist_fp32.draw_completion_sample(n=100)
+sample_b = dist_int8.draw_completion_sample(n=100)
+
+# Embed once (reuse for quantum metrics too)
+emb_a = embed_sample(sample_a)
+emb_b = embed_sample(sample_b)
+
+# Load semantic axis from pole corpora (generated via semantic-pole project)
+prof_axis = load_axis_from_jsonl(
+    "/path/to/professionalism.jsonl",
+    "/path/to/casualness.jsonl",
+    "professionalism-casualness"
+)
+
+# Interpret the difference
+interp = interpret_difference(emb_a, emb_b, [prof_axis],
+                               label_a="fp32", label_b="int8")
+print(interp.summary())  # Shows Δ, Hedges' g, p-value with FDR correction
+```
+
+See `SEMANTIC-AXES-GUIDE.md` for detailed guidance on axis design, quality metrics, and interpretation.
 
 ## Dataset Organization
 

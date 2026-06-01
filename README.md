@@ -125,6 +125,105 @@ In `experiments/`, we include the code used to produce the experiments shown in 
 
 Note that APIs are actively evolving: many APIs have changed behavior since when we used these scripts to collect samples between July and August 2024. For full details documenting the dates we queried each API for the samples in our dataset, see Appendix B.1 in [the paper](https://arxiv.org/abs/2410.20247).
 
+## Semantic Axes Interpretation
+
+Beyond detecting *if* two models differ, you may want to understand *what* differs. The `semantic_axes` module provides an interpretation layer that explains distributional differences using semantic dimensions.
+
+### What are Semantic Axes?
+
+A semantic axis is a unit vector in SBERT embedding space pointing from one concept (negative pole, e.g., "professionalism") to another (positive pole, e.g., "casualness"). By projecting LLM outputs onto these axes, you can quantify and compare models along interpretable dimensions like formality, technicality, sentiment, etc.
+
+**Key features:**
+- Statistical rigor: Welch's t-test, Hedges' g effect sizes, Benjamini-Hochberg FDR correction
+- Reuses embeddings: Works with the same SBERT embeddings used by quantum metrics
+- Quality metrics: Separation ratio and intra-pole statistics validate axis quality
+- Flexible: Use independently or as an interpretation layer after quantum detection
+
+### Quick Example
+
+```python
+import numpy as np
+from model_equality_testing.dataset import load_distribution
+from model_equality_testing.src.embeddings import embed_sample
+from model_equality_testing.src.semantic_axes import load_axis_from_jsonl, interpret_difference
+
+# 1. Load samples from two model sources
+dist_fp32 = load_distribution(
+    model="meta-llama/Meta-Llama-3-8B-Instruct",
+    prompt_ids={"wikipedia_en": [0, 1, 2]},
+    L=500, source="fp32", load_in_unicode=True,
+)
+dist_int8 = load_distribution(
+    model="meta-llama/Meta-Llama-3-8B-Instruct",
+    prompt_ids={"wikipedia_en": [0, 1, 2]},
+    L=500, source="int8", load_in_unicode=True,
+)
+sample_fp32 = dist_fp32.draw_completion_sample(n=100)
+sample_int8 = dist_int8.draw_completion_sample(n=100)
+
+# 2. Embed samples (reuse for both quantum metrics and semantic axes)
+emb_fp32 = embed_sample(sample_fp32)
+emb_int8 = embed_sample(sample_int8)
+
+# 3. Load semantic axis from pole corpora (see semantic-pole project)
+prof_axis = load_axis_from_jsonl(
+    "/path/to/professionalism.jsonl",
+    "/path/to/casualness.jsonl",
+    "professionalism-casualness"
+)
+
+# 4. Interpret the difference
+interp = interpret_difference(
+    emb_fp32, emb_int8, [prof_axis],
+    label_a="fp32", label_b="int8"
+)
+print(interp.summary())
+```
+
+**Output:**
+```
+Semantic Interpretation (1 axes, sorted by effect size):
+
+  professionalism ← → casualness:  Δ = +0.54  g = 0.82  p < 0.001 *
+    fp32 is more toward casualness than int8
+
+  * significant after Benjamini-Hochberg correction (α = 0.05)
+```
+
+### Integration with Quantum Metrics
+
+Semantic axes complement quantum-inspired metrics by providing interpretability:
+
+```python
+from model_equality_testing.src.quantum_metrics import fit_pca, pca_density_matrix, trace_distance
+
+# 1. Detect difference with quantum metrics
+pca = fit_pca(np.vstack([emb_fp32, emb_int8]), k=50)
+rho_fp32 = pca_density_matrix(emb_fp32, pca)
+rho_int8 = pca_density_matrix(emb_int8, pca)
+td = trace_distance(rho_fp32, rho_int8)
+print(f"Trace distance: {td:.4f}")  # e.g., 0.23 → models differ
+
+# 2. Interpret what differs with semantic axes
+interp = interpret_difference(emb_fp32, emb_int8, [prof_axis, form_axis, tech_axis],
+                               label_a="fp32", label_b="int8")
+print(interp.summary())  # Shows professionalism +0.54, formality +0.38, etc.
+```
+
+### Creating Semantic Axes
+
+Semantic axes are built from **pole corpora** — collections of texts exemplifying each pole of a dimension. Use the [`semantic-pole`](https://github.com/yourusername/semantic-pole) project to generate pole corpora via LLM synthesis.
+
+Each pole corpus is a JSONL file with records like:
+```json
+{"text": "Pursuant to our discussion...", "metadata": {"concept": "professionalism"}}
+{"text": "With regard to the aforementioned...", "metadata": {"concept": "professionalism"}}
+```
+
+The `load_axis_from_jsonl()` function embeds these texts, L2-normalizes them, computes centroids, and constructs a unit vector axis with quality metrics (separation ratio, intra-pole variance).
+
+For detailed guidance on axis design, interpretation, and quality metrics, see `SEMANTIC-AXES-GUIDE.md`.
+
 ## Citation
 
 If you use our dataset or code, please cite this work as
