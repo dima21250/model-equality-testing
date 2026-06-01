@@ -1,4 +1,4 @@
-# Plan: Semantic Axes Interpretation Layer (v2)
+# Plan: Semantic Axes Interpretation Layer (v2, revised)
 
 ## Context
 
@@ -6,9 +6,11 @@ Two projects need to connect:
 - **semantic-pole** (`~/Code/semantic-pole`): Generates pole corpora as JSONL files (e.g., `professionalism.jsonl` + `casualness.jsonl`). Each record: `{"text": "...", "metadata": {"concept": "pole_name", ...}}`.
 - **model-equality-testing**: Has quantum-inspired metrics (density matrices, trace distance, entropy) on SBERT embeddings for detecting LLM distributional differences.
 
-**Goal**: Build an interpretation layer so that after quantum metrics detect a difference ("trace distance = 0.23"), semantic axes explain *what* differs ("professionalism +0.54, d=0.82, p<0.001").
+**Goal**: Build an interpretation layer so that after quantum metrics detect a difference ("trace distance = 0.23"), semantic axes explain *what* differs ("professionalism +0.54, g=0.82, p<0.001").
 
-**Key constraint**: Semantic axes are an **interpretation layer only** — they don't replace PCA or density matrices.
+**Key constraint**: Semantic axes are an **interpretation layer only** — they don't replace PCA or density matrices. They can also be used independently to profile a single model or compare models regardless of quantum detection results.
+
+**Axis design note**: Choosing which dimensions to measure and generating pole corpora is the user's responsibility, done via the `semantic-pole` CLI. A good axis pair has clear conceptual contrast, well-generated corpora (diverse, on-topic), and ideally convergence-tested stability. See the `semantic-pole` project for corpus generation.
 
 ---
 
@@ -33,13 +35,32 @@ class SemanticAxis:
     embedding_model: str         # "all-mpnet-base-v2"
     embedding_dim: int           # 768
     pole_distance: float         # ||positive_centroid - negative_centroid|| before normalization
-    metadata: dict               # creation info (paths, corpus sizes, timestamp)
+    metadata: dict               # creation info — see Metadata Schema below
 ```
 
 Validation in `__post_init__`:
 - `axis_vector` is unit norm
 - Dimensions match across all vectors
 - `pole_distance > 1e-6` (error if poles don't separate)
+
+#### Metadata Schema
+
+The `metadata` dict contains provenance and quality information computed during axis construction. `pole_distance` is NOT duplicated here — it is a first-class field on `SemanticAxis`.
+
+```python
+metadata = {
+    "negative_pole_path": str,       # file path to negative pole JSONL
+    "positive_pole_path": str,       # file path to positive pole JSONL
+    "negative_pole_samples": int,    # number of texts in negative pole corpus
+    "positive_pole_samples": int,    # number of texts in positive pole corpus
+    "negative_pole_intra_std": float, # mean L2 distance of embeddings from centroid (negative pole)
+    "positive_pole_intra_std": float, # mean L2 distance of embeddings from centroid (positive pole)
+    "separation_ratio": float,       # pole_distance / mean(intra_std_neg, intra_std_pos)
+    "created_at": str,               # ISO 8601 timestamp
+}
+```
+
+The `separation_ratio` is analogous to Fisher's discriminant ratio — higher values indicate better-separated poles. Values below 1.0 suggest the poles overlap substantially and the axis may have poor discriminating power.
 
 ### AxisProjectionResult
 Per-axis comparison between two samples:
@@ -56,12 +77,20 @@ class AxisProjectionResult:
     sem_a: float             # standard error of mean
     sem_b: float
     delta: float             # mean_a - mean_b
-    cohens_d: float          # Hedges' g (bias-corrected)
+    hedges_g: float          # Hedges' g (bias-corrected effect size)
     t_pvalue: float          # Welch's t-test p-value (does not assume equal variance)
-    corrected_pvalue: float  # after multiple comparisons correction
+    corrected_pvalue: float  # after Benjamini-Hochberg FDR correction
     wasserstein: float       # 1D Wasserstein distance
     n_a: int
     n_b: int
+```
+
+**Effect size formula**: Hedges' g uses the average-SD denominator (does not assume equal variance), then applies the bias correction factor J:
+```
+s_avg = sqrt((s_a² + s_b²) / 2)
+d = (mean_a - mean_b) / s_avg
+J = 1 - 3 / (4 * (n_a + n_b) - 9)
+hedges_g = d * J
 ```
 
 ### SemanticInterpretation
@@ -71,8 +100,10 @@ Collection of per-axis results with summary methods:
 class SemanticInterpretation:
     results: List[AxisProjectionResult]
     embedding_model: str
+    label_a: str                # "fp32", "Model A", etc.
+    label_b: str                # "int8", "Model B", etc.
 
-    def sorted_by_effect(self) -> List[AxisProjectionResult]   # |Cohen's d| descending
+    def sorted_by_effect(self) -> List[AxisProjectionResult]   # |hedges_g| descending
     def summary(self, top_k=5) -> str                          # human-readable report
 ```
 
