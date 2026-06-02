@@ -1,0 +1,312 @@
+% !TEX program = xelatex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{longtable,booktabs,array}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+
+% Use fonts that definitely exist on macOS
+\setmainfont{Times New Roman}
+\setsansfont{Helvetica}
+\setmonofont{Courier}
+
+% Define checkmark and cross symbols for text mode
+\newcommand{\cmark}{✓}
+\newcommand{\xmark}{✗}
+\newcommand{\wmark}{⚠}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\title{Advantages of Density Matrix Metrics for LLM Comparison}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+This document explains why we use density matrix representations and associated metrics (trace distance, von Neumann entropy, quantum relative entropy) for comparing LLM output distributions, with honest assessment of advantages and limitations.
+
+\section{What We're Actually Doing}
+
+\subsection{The Approach}
+
+We represent LLM output distributions using \textbf{normalized Gram matrices} (density matrices):
+
+\begin{enumerate}
+\item Embed completions using SBERT: $\{e_1, e_2, \ldots, e_n\} \in \mathbb{R}^d$ where $d=768$
+\item Compute Gram matrix: $G[i,j] = e_i^T e_j$ (inner products)
+\item Normalize: $\rho = G / \text{trace}(G)$
+\item Optionally compress via PCA: reduce $d=768 \to k=50$ dimensions first
+\item Compute metrics:
+\begin{itemize}
+\item \textbf{Trace distance}: $D(\rho_A, \rho_B) = \frac{1}{2} ||\rho_A - \rho_B||_1$ (sum of absolute eigenvalues of difference)
+\item \textbf{Von Neumann entropy}: $S(\rho) = -\text{trace}(\rho \log \rho) = -\sum_i \lambda_i \log \lambda_i$ (Shannon entropy of eigenvalues)
+\item \textbf{Relative entropy}: $S(\rho_A || \rho_B) = \text{trace}(\rho_A \log \rho_A - \rho_A \log \rho_B)$
+\end{itemize}
+\end{enumerate}
+
+\textbf{Key point}: We're using a \textbf{similarity-based representation} (Gram matrix) rather than a frequency-based one (histogram). The mathematical machinery comes from quantum information theory, but the underlying idea is linear algebra on similarity matrices.
+
+\subsection{What Makes This ``Quantum-Inspired''}
+
+The terminology comes from quantum information theory where:
+\begin{itemize}
+\item $\rho$ is called a density matrix (positive semi-definite, trace 1)
+\item Trace distance is the standard metric on quantum states
+\item Von Neumann entropy generalizes Shannon entropy to continuous systems
+\end{itemize}
+
+\textbf{However}: You can think of this purely as linear algebra on normalized Gram matrices. The physics analogies (superposition, entanglement, collapse) are \textbf{not} necessary to understand or justify the approach.
+
+\section{Why This Approach? Motivation and Design Choices}
+
+\subsection{The Core Motivation: Semantic Similarity Matters}
+
+\textbf{Token-level tests} (MMD on tokens, chi-squared on token frequencies) treat these as completely different:
+\begin{itemize}
+\item ``The cat sat on the mat''
+\item ``The feline rested on the rug''
+\end{itemize}
+
+\textbf{Embedding-based approaches} recognize these as semantically similar because SBERT maps synonyms to nearby points in embedding space.
+
+\textbf{Our choice}: Use a representation that \textbf{natively incorporates} semantic similarity, not as a post-hoc calculation but as the fundamental structure of the distribution representation.
+
+\subsection{Why Gram Matrices Specifically?}
+
+\textbf{Gram matrix} $G[i,j] = e_i^T e_j$ captures:
+\begin{itemize}
+\item \textbf{Diagonal}: Self-similarities (= 1 after L2 normalization)
+\item \textbf{Off-diagonal}: Pairwise similarities between different samples
+\end{itemize}
+
+Normalizing $\rho = G / \text{trace}(G)$ ensures:
+\begin{itemize}
+\item $\text{trace}(\rho) = 1$ (valid probability distribution)
+\item $\rho \geq 0$ (positive semi-definite, since Gram matrices are PSD)
+\item Structure encodes both ``how frequent'' and ``how similar''
+\end{itemize}
+
+\textbf{Alternative perspective}: This is a \textbf{kernel-based distribution representation} where the kernel is the inner product.
+
+\section{Computational Advantages (Honest Assessment)}
+
+\subsection{Efficient After PCA Compression}
+
+\textbf{Computational cost}:
+\begin{itemize}
+\item PCA: $O(nd^2 + d^3) \approx O(n \cdot 768^2 + 768^3)$ --- one-time cost if you cache PCA
+\item Gram matrix: $O(nk^2)$ where $k=50$
+\item Eigenvalue decomposition: $O(n^3)$ on $n \times n$ matrix
+\end{itemize}
+
+For $n=100$ samples:
+\begin{itemize}
+\item Gram computation: $100 \times 50^2 = 250\text{K}$ operations (trivial)
+\item Eigenvalues: $O(100^3) = 1\text{M}$ operations (fast)
+\end{itemize}
+
+\textbf{Honest assessment}:
+\begin{itemize}
+\item[\cmark] Computationally efficient due to PCA compression
+\item[\xmark] NOT ``vastly faster'' than alternatives --- other methods benefit equally from PCA
+\item[\cmark] Eigenvalue decomposition is well-optimized in numerical libraries
+\item The efficiency comes from \textbf{PCA compression} more than from the specific metrics
+\end{itemize}
+
+\subsection{No Continuous Density Estimation}
+
+\textbf{What we avoid}:
+\begin{itemize}
+\item Kernel Density Estimation (KDE) in high dimensions (fails due to curse of dimensionality)
+\item Gaussian Mixture Model (GMM) fitting (requires EM algorithm, model selection)
+\end{itemize}
+
+\textbf{What we do instead}:
+\begin{itemize}
+\item Work with \textbf{discrete} representation over $n$ samples
+\item Gram matrix is $n \times n$ (finite, not continuous)
+\item No bandwidth selection, no component count selection
+\end{itemize}
+
+\textbf{But}: This is true of \textbf{many} modern methods:
+\begin{itemize}
+\item MMD: kernel-based, no density estimation
+\item Energy distance: distance-based, no density estimation
+\item Classifier two-sample tests: no density estimation
+\item Wasserstein: coupling-based, no density estimation
+\end{itemize}
+
+\textbf{Honest assessment}:
+\begin{itemize}
+\item[\cmark] Avoids density estimation (good for high-D)
+\item[\xmark] NOT unique to density matrix approach
+\item[\cmark] Sidesteps curse of dimensionality by working with finite Gram matrices
+\item Most competitive methods also avoid density estimation
+\end{itemize}
+
+\section{Methodological Advantages}
+
+\subsection{Similarity-Based Distribution Representation}
+
+\textbf{Core idea}: Represent a distribution not by frequencies of discrete outcomes, but by a similarity structure over outcomes.
+
+\textbf{Gram matrix representation}:
+$$\rho[i,j] \propto \text{similarity}(\text{completion}_i, \text{completion}_j)$$
+
+\textbf{Advantage}:
+\begin{itemize}
+\item[\cmark] Semantic overlap is \textbf{structural}, not post-hoc
+\item[\cmark] Naturally handles paraphrasing/synonyms
+\item[\cmark] Don't need separate similarity calculation
+\end{itemize}
+
+\textbf{Limitation}:
+\begin{itemize}
+\item[\wmark] This is true of ANY similarity-based representation, not specific to density matrices
+\item[\wmark] You could use other kernel methods with similar properties
+\end{itemize}
+
+\subsection{Eigenspectrum-Based Diversity Measurement}
+
+\textbf{Von Neumann entropy}:
+$$S_{\text{vN}} = -\sum \lambda_i \log \lambda_i$$
+
+This is Shannon entropy applied to the eigenvalue distribution.
+
+\textbf{Honest assessment}:
+\begin{itemize}
+\item[\cmark] Parameter-free (no $K$ to choose, no bandwidth)
+\item[\cmark] Operates on continuous eigenspectrum (no hard boundaries)
+\item[\wmark] Other eigenvalue-based measures (participation ratio, effective rank) have similar properties
+\item[\wmark] Von Neumann is essentially ``Shannon entropy on eigenvalues'' --- not fundamentally different
+\end{itemize}
+
+\section{What This Approach Does NOT Provide}
+
+\subsection{Limitation 1: Interpretability}
+
+\textbf{What you get}:
+\begin{itemize}
+\item Trace distance = 0.23
+\item Von Neumann entropy = 3.8
+\end{itemize}
+
+\textbf{What you DON'T get}:
+\begin{itemize}
+\item Which semantic dimensions differ (professionalism? formality?)
+\item Direction of change (more or less casual?)
+\item Effect sizes on named dimensions
+\end{itemize}
+
+\textbf{For interpretation}, you need:
+\begin{itemize}
+\item \textbf{Semantic axes} (project onto named dimensions)
+\item \textbf{Manual inspection} of samples
+\item \textbf{Task-specific metrics} (toxicity, readability, etc.)
+\end{itemize}
+
+\subsection{Limitation 2: Still Have Design Choices}
+
+\textbf{Choices you must make}:
+\begin{enumerate}
+\item \textbf{PCA dimensions ($k$)}: Typical $k=50$, but affects results
+\item \textbf{Embedding model}: all-mpnet-base-v2 vs others
+\item \textbf{Numerical stability}: epsilon for $\log(\lambda + \epsilon)$
+\end{enumerate}
+
+\textbf{Honest assessment}:
+\begin{itemize}
+\item[\xmark] NOT ``parameter-free'' --- you chose $k$ and embedding model
+\item[\cmark] Fewer hyperparameters requiring \textbf{tuning} than KDE (bandwidth) or K-means ($K$)
+\item[\wmark] These are design choices that affect results
+\end{itemize}
+
+\section{When to Use This Approach}
+
+\subsection{Use Density Matrix Metrics When:}
+
+\begin{itemize}
+\item[\cmark] \textbf{You want multiple perspectives}: Distance, entropy, and divergence from one computation
+\item[\cmark] \textbf{You care about distributional structure}: Not just ``are they different?'' but ``how diverse?'' and ``effective dimensionality?''
+\item[\cmark] \textbf{You value theoretical grounding}: Prefer importing established framework over ad-hoc metrics
+\item[\cmark] \textbf{Computational efficiency matters}: Working with $n=100$--500 samples where $O(n^3)$ on small matrices is fine
+\item[\cmark] \textbf{You're comparing at the semantic level}: Already decided to use embeddings rather than tokens
+\end{itemize}
+
+\subsection{Consider Alternatives When:}
+
+\begin{itemize}
+\item[\wmark] \textbf{You only need distance}: MMD is simpler for pure two-sample testing
+\item[\wmark] \textbf{You need interpretability}: Semantic axes give you named dimensions with effect sizes
+\item[\wmark] \textbf{You have very large samples}: $n > 1000$ makes $n \times n$ matrices expensive (though you can subsample)
+\item[\wmark] \textbf{You want to avoid ``quantum'' terminology}: The math works the same, but you could call it ``normalized Gram matrix metrics''
+\end{itemize}
+
+\section{Recommended Framing (Minimize Eye-Rolling)}
+
+\subsection{What NOT to Say:}
+
+\begin{itemize}
+\item[\xmark] ``LLMs are quantum systems''
+\item[\xmark] ``Quantum metrics are vastly superior to classical approaches''
+\item[\xmark] ``This is the only way to handle semantic overlap''
+\item[\xmark] ``We've unified probability and similarity''
+\item[\xmark] ``Avoids the curse of dimensionality'' (we sidestep, not solve)
+\end{itemize}
+
+\subsection{What TO Say:}
+
+\begin{itemize}
+\item[\cmark] ``We use a similarity-based distribution representation (normalized Gram matrices) rather than frequency histograms''
+\item[\cmark] ``The mathematical framework comes from quantum information theory, which provides well-studied metrics''
+\item[\cmark] ``This is computationally efficient (after PCA compression) and theoretically grounded, though other embedding-based methods are also competitive''
+\item[\cmark] ``The advantage over token-level tests is operating in semantic space; the advantage over some embedding-based alternatives is getting multiple metrics from one framework''
+\item[\cmark] ``We complement this with semantic axes for interpretation''
+\end{itemize}
+
+\subsection{The Elevator Pitch:}
+
+\begin{quote}
+``We represent LLM output distributions as normalized Gram matrices (density matrices) in SBERT embedding space. This naturally encodes semantic similarity between outputs. We compute trace distance (distinguishability), von Neumann entropy (diversity), and relative entropy (information divergence) --- metrics from quantum information theory that are computationally efficient and theoretically well-studied. For interpretation, we project onto semantic axes to identify specific dimensions of difference (e.g., formality, technicality).''
+\end{quote}
+
+\textbf{No physics analogies. No claims of superiority. Just: what we do, why it's sensible, what it provides.}
+
+\section{Summary}
+
+\textbf{Real advantages}:
+\begin{enumerate}
+\item[\cmark] Similarity-based representation handles semantic overlap naturally
+\item[\cmark] Multiple metrics (distance, entropy, divergence) from one framework
+\item[\cmark] Computationally efficient with PCA compression
+\item[\cmark] Theoretically grounded (imports quantum information theory)
+\item[\cmark] Fewer tuning hyperparameters than KDE or K-means approaches
+\item[\cmark] Bounded, well-behaved metrics with probabilistic interpretations
+\end{enumerate}
+
+\textbf{Honest limitations}:
+\begin{enumerate}
+\item[\wmark] Most advantages come from using embeddings, not specifically from density matrices
+\item[\wmark] Other embedding-based methods (MMD, Wasserstein) are competitive
+\item[\wmark] Still have design choices ($k$ for PCA, embedding model)
+\item[\wmark] Don't provide interpretability (need semantic axes for that)
+\item[\wmark] Limited by SBERT's semantic resolution
+\end{enumerate}
+
+\textbf{Bottom line}:
+\begin{quote}
+Density matrix metrics are a \textbf{well-grounded, computationally efficient choice} for comparing LLM distributions in semantic space. They are \textbf{not uniquely necessary}, but they provide a \textbf{rich framework} with multiple metrics and solid theoretical foundation. The approach is \textbf{competitive with alternatives} and particularly valuable when you want both distance and structural measures (entropy, spectrum) rather than just a two-sample test statistic.
+\end{quote}
+
+\textbf{For complete analysis}: Combine density matrix metrics (detection + quantification) with semantic axes (interpretation). The former tells you \textit{that} and \textit{how much} distributions differ; the latter tells you \textit{what} differs.
+
+\end{document}
